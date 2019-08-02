@@ -17,16 +17,26 @@
         <h2>Hello!</h2>
     </div>
     <div class="container">
+        <a class="waves-effect waves-light btn start-button">start processing samples</a>
         <h4>Processed samples:</h4>
-        <h4 id="samples"></h4>
+        <h4 id="samples">0</h4>
     </div>
     <script type="text/javascript">
         var ws = new WebSocket("ws://127.0.0.1:8765");
-        var samples = document.getElementById("samples");
-        ws.onmessage = function (event) {
-            var message = event.data;
-            samples.innerHTML = message;
-        };
+        var start_button = document.querySelector('.start-button');
+        start_button.onclick = function (event) {
+            console.log('start');
+            ws.send('start');
+
+            var samples = document.getElementById("samples");
+            ws.onmessage = function (event) {
+                var message = event.data;
+                samples.innerHTML = message;
+            };
+        }
+
+
+
     </script>
 
     <script type="text/javascript" src="js/materialize.min.js"></script>

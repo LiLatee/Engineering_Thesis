@@ -26,8 +26,14 @@ async def process_all_samples(websocket, path):
             await websocket.send(str(samples_num))
 
 
-if __name__ == "__main__":
-    start_server = websockets.serve(process_all_samples, "127.0.0.1", 8765)
+async def consumer_handler(websocket, path):
+    async for message in websocket:
+        if message == 'start':
+            await process_all_samples(websocket, path)
 
-    asyncio.get_event_loop().run_until_complete(start_server)
+
+if __name__ == "__main__":
+    server_waiting_for_start = websockets.serve(consumer_handler, "127.0.0.1", 8765)
+
+    asyncio.get_event_loop().run_until_complete(server_waiting_for_start)
     asyncio.get_event_loop().run_forever()
