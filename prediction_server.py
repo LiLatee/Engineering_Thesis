@@ -10,6 +10,14 @@ def hello_world():
     return 'Hello, World!'
 
 
+@app.route('/train', methods=['POST'])
+def train():
+    data = pd.DataFrame(data=json.loads(request.data))
+    print("Training data: ")
+    print(data)
+    return ''
+
+
 @app.route('/fit', methods=['POST'])
 def fit():
     sample = pd.Series(data=json.loads(request.data))
