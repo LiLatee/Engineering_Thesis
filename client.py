@@ -45,9 +45,11 @@ async def process_all_samples(websocket, path):
         for index, row in chunk.iterrows():
             samples_num += 1
             print(samples_num)
-            print(row)
+            # print(row)
             await websocket.send(str(samples_num))
             requests.request(method='POST', url='http://127.0.0.1:5000/fit', data=row.to_json())
+            if samples_num % 500 == 0:
+                requests.request(method='POST', url='http://127.0.0.1:5000/update', data=chunk.to_json())
 
 
 def send_samples_for_model_training():
