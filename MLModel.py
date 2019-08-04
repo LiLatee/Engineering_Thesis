@@ -1,5 +1,6 @@
 import time
 import tasks
+from redis_client import set_model_version
 
 class MLModel:
 
@@ -7,6 +8,7 @@ class MLModel:
         super().__init__()
         self.name = name
         self.version = 1
+        set_model_version(1)
 
     def train(self, data):
         print("Model is trained...")
@@ -24,5 +26,9 @@ class MLModel:
 
     def update_ready(self, file_name):
         print("Model is replaced with updated one from file " + str(file_name))
+        self.update_version()
+
+    def update_version(self):
         self.version += 1
+        set_model_version(self.version)
 

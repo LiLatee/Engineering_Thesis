@@ -3,6 +3,8 @@ import pandas as pd
 import asyncio
 import websockets
 import requests
+from redis_client import get_model_version
+import json
 
 not_sorted_data_file_name = 'data/CriteoSearchData.csv'
 data_file_name = 'data/CriteoSearchDataSorted.csv'
@@ -46,10 +48,20 @@ async def process_all_samples(websocket, path):
             samples_num += 1
             print(samples_num)
             # print(row)
-            await websocket.send(str(samples_num))
+            await send_model_info_to_websocket(websocket, samples_num)
             requests.request(method='POST', url='http://127.0.0.1:5000/fit', data=row.to_json())
             if samples_num % 500 == 0:
                 requests.request(method='GET', url='http://127.0.0.1:5000/update_start', data=chunk.to_json())
+
+
+async def send_model_info_to_websocket(websocket, samples_num):
+    message = {
+        "samples": samples_num,
+        "model_name": 0,
+        "model_version": get_model_version()
+    }
+    print(message)
+    await websocket.send(json.dumps(message))
 
 
 def send_samples_for_model_training():
