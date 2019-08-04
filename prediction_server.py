@@ -28,11 +28,19 @@ def fit():
     return ''
 
 
-@app.route('/update', methods=['GET'])
-def update():
-    data = pd.DataFrame(data=json.loads(request.data))
-    model.update(data)
+# starts updating a model
+@app.route('/update_start', methods=['GET'])
+def update_start():
+    model.update_start(json.loads(request.data))
     return ''
+
+
+# sends signal to model, that updated model is ready and models should be replaced
+@app.route('/update_ready', methods=['GET'])
+def update_ready():
+    model.update_ready(file_name=request.data)
+    return ''
+
 
 if __name__  == "__main__":
     app.run()
