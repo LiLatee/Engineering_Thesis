@@ -59,17 +59,30 @@ class model_SGDClassifier:
         return df
 
     def transform_df_into_df_with_one_hot_vectors(self, df_to_transform):
-        df_result = df_to_transform.dropna(axis=0)  # usuwanie wierszy, które zawierają null
-        df_result.isnull().sum()
+        required_column_names_list = self.read_requred_column_names()
+        data_as_dict = json.loads(df_to_transform.T.to_json())
 
-        index_of_columns_to_change_to_one_hot_vectors = [6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18, 21]
+        samples = []
+        for row_number in data_as_dict:
+            transformed_row_as_dict = dict.fromkeys(required_column_names_list)
+            transformed_row_as_dict['Sale'] = data_as_dict[str(row_number)]['Sale']
+            transformed_row_as_dict['SalesAmountInEuro'] = data_as_dict[str(row_number)]['SalesAmountInEuro']
+            transformed_row_as_dict['time_delay_for_conversion'] = data_as_dict[str(row_number)][
+                'time_delay_for_conversion']
+            transformed_row_as_dict['click_timestamp'] = data_as_dict[str(row_number)]['click_timestamp']
+            transformed_row_as_dict['nb_clicks_1week'] = data_as_dict[str(row_number)]['nb_clicks_1week']
+            for column_number, (column_name, cell_value) in enumerate(
+                    zip(data_as_dict[row_number].keys(), data_as_dict[row_number].values())):
+                if column_number > 2:
+                    transformed_column_name = column_name + '_' + str(cell_value)
+                    if transformed_column_name in required_column_names_list:
+                        transformed_row_as_dict[transformed_column_name] = 1
+            samples.append(transformed_row_as_dict)
 
-        df_only_one_hot_vectors_columns = pd.get_dummies(df_to_transform.iloc[:, index_of_columns_to_change_to_one_hot_vectors])
-        df_common_columns = df_to_transform.iloc[:, [0, 1, 2, 4, 5]]
+        df = pd.DataFrame(samples)
+        df = df.fillna(0)
 
-        df_result = pd.concat([df_common_columns, df_only_one_hot_vectors_columns], axis=1, sort=True)
-
-        return df_result
+        return df
 
     def create_model_2(self, json_data):
         self.df_original = pd.read_json(json_data)
@@ -175,8 +188,10 @@ class model_SGDClassifier:
 
     def predict(self, X):
         transformed_X = self.transform_one_row_in_one_hot_vectors_row(X)
+        transformed_X = transformed_X[3:] # remove sales features from sample
         y = self.model.predict_proba([transformed_X])
-        return(y)
+        return y
+
 
     def save_model(self):
         if self.model is None:
