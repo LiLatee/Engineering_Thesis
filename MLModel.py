@@ -10,13 +10,13 @@ class MLModel:
         self.version = 1
         set_model_version(1)
 
-    def train(self, data):
+    def fit(self, data):
         print("Model is trained...")
         time.sleep(2)
         print("Done.")
         pass
 
-    def fit(self, sample):
+    def predict(self, sample):
         print("Prediction is being made")
         print('model.version=' + str(self.version))
         pass

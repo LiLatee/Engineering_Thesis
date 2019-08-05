@@ -47,9 +47,8 @@ async def process_all_samples(websocket, path):
         for index, row in chunk.iterrows():
             samples_num += 1
             print(samples_num)
-            # print(row)
             await send_model_info_to_websocket(websocket, samples_num)
-            requests.request(method='POST', url='http://127.0.0.1:5000/fit', data=row.to_json())
+            requests.request(method='POST', url='http://127.0.0.1:5000/predict', data=row.to_json())
             if samples_num % 500 == 0:
                 requests.request(method='GET', url='http://127.0.0.1:5000/update_start', data=chunk.to_json())
 
@@ -71,7 +70,7 @@ def send_samples_for_model_training():
         nrows=train_model_samples_number,
         names=headers,
         usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
-    requests.request(method='POST', url='http://127.0.0.1:5000/train', data=data.to_json())
+    requests.request(method='POST', url='http://127.0.0.1:5000/fit', data=data.to_json())
     print('data for training was send. ' + str(data.shape))
 
 

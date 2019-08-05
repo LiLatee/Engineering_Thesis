@@ -12,19 +12,19 @@ def hello_world():
     return 'Hello, World!'
 
 
-@app.route('/train', methods=['POST'])
-def train():
+@app.route('/fit', methods=['POST'])
+def fit():
     data = pd.DataFrame(data=json.loads(request.data))
     # print(data)
-    model.train(data)
+    model.fit(data)
     return ''
 
 
-@app.route('/fit', methods=['POST'])
-def fit():
+@app.route('/predict', methods=['POST'])
+def predict():
     sample = pd.Series(data=json.loads(request.data))
     # print(sample)
-    model.fit(sample)
+    model.predict(sample)
     return ''
 
 
