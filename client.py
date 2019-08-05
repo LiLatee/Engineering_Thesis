@@ -8,7 +8,7 @@ import json
 
 not_sorted_data_file_name = 'data/CriteoSearchData.csv'
 data_file_name = 'data/CriteoSearchDataSorted.csv'
-train_model_samples_number = 100000
+train_model_samples_number = 1000
 
 headers = ['Sale', 'SalesAmountInEuro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
            'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',
@@ -64,12 +64,14 @@ async def send_model_info_to_websocket(websocket, samples_num):
 
 
 def send_samples_for_model_training():
+    print(train_model_samples_number)
     data = pd.read_csv(
         data_file_name,
         sep='\t',
         nrows=train_model_samples_number,
         names=headers,
         usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+    print("Data for send: " + str(data.shape))
     requests.request(method='POST', url='http://127.0.0.1:5000/fit', data=data.to_json())
     print('data for training was send. ' + str(data.shape))
 

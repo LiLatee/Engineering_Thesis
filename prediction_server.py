@@ -1,10 +1,10 @@
 from flask import Flask, request
 import pandas as pd
 import json
-from MLModel import MLModel
+from model.MLModel import MLModel
 
 app = Flask(__name__)
-model = MLModel('Some ML model')
+model = MLModel()
 
 
 @app.route('/')
@@ -14,17 +14,18 @@ def hello_world():
 
 @app.route('/fit', methods=['POST'])
 def fit():
-    data = pd.DataFrame(data=json.loads(request.data))
+    # data = pd.DataFrame(data=json.loads(request.data))
     # print(data)
-    model.fit(data)
+    model.fit(request.data)
+    # model.fit(json.loads(request.data))
     return ''
 
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    sample = pd.Series(data=json.loads(request.data))
+    # sample = pd.Series(data=json.loads(request.data))
     # print(sample)
-    model.predict(sample)
+    model.predict(request.data)
     return ''
 
 

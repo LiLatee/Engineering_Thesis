@@ -10,7 +10,11 @@ from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 
 
-class Model:
+class model_SGDClassifier:
+
+    def __init__(self) -> None:
+        self.model = None
+
     @staticmethod
     def read_csv_data(filepath, rows):
         headers = ['Sale', 'SalesAmountInEuro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
@@ -97,6 +101,7 @@ class Model:
         print('Nieprawidłowo sklasyfikowane próbki: %d' % (y_test != y_pred).sum())
         print('Dokładność: %.2f' % lr.score(X_test_std, y_test))
 
+        self.model = lr
         self.save_model()
 
     def create_model(self, rows, filepath):
@@ -134,7 +139,7 @@ class Model:
         pass
 
     def read_requred_column_names(self):
-        required_column_name_file = open('required_column_names_list.txt', 'r')
+        required_column_name_file = open('model/required_column_names_list.txt', 'r')
         required_column_names_list = required_column_name_file.read().splitlines()
         return required_column_names_list
 
@@ -170,7 +175,7 @@ class Model:
 
     def predict(self, X):
         transformed_X = self.transform_one_row_in_one_hot_vectors_row(X)
-        y = self.model.predict_proba(transformed_X)
+        y = self.model.predict_proba([transformed_X])
         return(y)
 
     def save_model(self):
@@ -192,7 +197,7 @@ class Model:
 
 
 if __name__ == '__main__':
-    m = Model()
+    m = model_SGDClassifier()
     m.create_model(rows=10000, filepath='D:\Projekty\Engineering_Thesis\Dataset\Criteo_Conversion_Search\CriteoSearchData.csv')
     m.save_model()
     m.predict(None)
