@@ -7,7 +7,7 @@ import collections
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, normalize
 
 
 class model_SGDClassifier:
@@ -98,7 +98,9 @@ class model_SGDClassifier:
         self.sc = StandardScaler()
         self.sc.fit(X_train)
         X_train_std = self.sc.transform(X_train)
+        X_train_std = normalize(X_train_std, norm='l2')
         X_test_std = self.sc.transform(X_test)
+        X_test_std = normalize(X_test_std, norm='l2')
 
         # ppn = Perceptron(eta0=0.1, random_state=1, n_jobs=-1)
         # ppn.fit(X_train_std, y_train)
@@ -107,7 +109,7 @@ class model_SGDClassifier:
         # lr.fit(X_train_std, y_train)
 
         # X_train_std, X_val_std, y_train, y_val = train_test_split(X_train_std, y_train, test_size=0.2, random_state=1)
-        lr = SGDClassifier(loss='log', verbose=0, n_jobs=-1, random_state=1)
+        lr = SGDClassifier(loss='log', verbose=0, n_jobs=-1, random_state=1, tol=1e-3, max_iter=1000)
         lr.fit(X_train_std, y_train)
 
         print(collections.Counter(y_test))
@@ -140,7 +142,10 @@ class model_SGDClassifier:
         sc = StandardScaler()
         sc.fit(X_train)
         X_train_std = sc.transform(X_train)
+        X_train_std = normalize(X_train_std, norm='l2')
         X_test_std = sc.transform(X_test)
+        X_test_std = normalize(X_test_std, norm='l2')
+
 
         lr = SGDClassifier(loss='log', verbose=0, n_jobs=-1, random_state=1)
         lr.fit(X_train_std, y_train)
@@ -191,13 +196,15 @@ class model_SGDClassifier:
 
     def predict(self, x: json):
         transformed_x = self.transform_one_row_in_one_hot_vectors_row(x)
-        transformed_x = transformed_x[3:] # remove sales features from sample
+        transformed_x = transformed_x[3:]  # remove sales features from sample
         transformed_x = self.sc.transform([transformed_x])
+        print(transformed_x)
+        transformed_x = normalize(transformed_x, norm='l2')
+        print(transformed_x)
         probability = self.model.predict_proba(transformed_x)
         y = self.model.predict(transformed_x)
 
         return y, probability
-
 
     def save_model(self):
         if self.model is None:
@@ -215,7 +222,8 @@ class model_SGDClassifier:
         self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
         print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
 
-    def test(self):
+    def test(self, n_samples_for_training: int, n_samples_for_testing: int) -> None:
+        n_samples_toread_from_csv = n_samples_for_training + n_samples_for_testing + 1
         headers = ['Sale', 'SalesAmountInEuro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
                    'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',
                    'product_brand', 'product_category(1)', 'product_category(2)', 'product_category(3)',
@@ -223,19 +231,19 @@ class model_SGDClassifier:
                    'product_country', 'product_id', 'product_title', 'partner_id', 'user_id']
         df = pd.read_csv('D:\Projekty\Engineering_Thesis\Dataset\Criteo_Conversion_Search\CriteoSearchData-sorted.csv',
                          sep='\t',
-                         nrows=100000,
+                         nrows=n_samples_toread_from_csv,
                          names=headers,
                          low_memory=False,
                          usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
 
-        training_data_json = df[10000:100000].to_json()
+        training_data_json = df[1:n_samples_for_training+1].to_json()
 
         print("Training...")
         self.create_model_2(training_data_json)
         print("DONE")
         print("Testing...")
         f = np.array([])
-        for id, row in df[1:1001].iterrows():
+        for id, row in df[n_samples_for_training+2:n_samples_for_training+2+n_samples_for_testing].iterrows():
             y, prob = self.predict(row.to_json())
             f = np.append(f, y)
 
@@ -255,5 +263,5 @@ class model_SGDClassifier:
 
 if __name__ == '__main__':
     m = model_SGDClassifier()
-    m.test()
+    m.test(1000, 5)
 
