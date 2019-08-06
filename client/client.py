@@ -46,7 +46,7 @@ async def process_all_samples(websocket, path):
         print(chunk)
         for index, row in chunk.iterrows():
             samples_num += 1
-            print(samples_num)
+            # print(samples_num)
             await send_model_info_to_websocket(websocket, samples_num)
             requests.request(method='POST', url='http://engineeringthesis_prediction_server_1:5000/predict', data=row.to_json())
             if samples_num % 500 == 0:
@@ -59,7 +59,7 @@ async def send_model_info_to_websocket(websocket, samples_num):
         "model_name": 0,
         "model_version": get_model_version()
     }
-    print(message)
+    # print(message)
     await websocket.send(json.dumps(message))
 
 
