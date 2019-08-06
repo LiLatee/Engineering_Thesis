@@ -2,11 +2,12 @@ import sqlalchemy as db
 import pandas as pd
 import sqlite3
 import time
+import json
 
 from sqlite3 import Error
 
-class db2:
 
+class db2:
     def __create_connection(self, db_file):
         """ create a database connection to a SQLite database """
         try:
@@ -17,12 +18,6 @@ class db2:
         return None
 
     def create_table(self):
-        # """ create a table from the create_table_sql statement
-        # :param conn: Connection object
-        # :param create_table_sql: a CREATE TABLE statement
-        # :return:
-        # """
-
         sql_create_samples_table = """ CREATE TABLE IF NOT EXISTS samples (
                                             id INTEGER PRIMARY KEY,
                                             Sale TEXT,
@@ -59,7 +54,8 @@ class db2:
         conn.commit()
         conn.close()
 
-    def read_csv_data(self, filepath, rows):
+    @staticmethod
+    def read_csv_data(filepath, rows):
         headers = ['Sale', 'SalesAmountInEuro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
                    'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',
                    'product_brand', 'product_category(1)', 'product_category(2)', 'product_category(3)',
@@ -74,10 +70,7 @@ class db2:
             usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
         return df
 
-    def add_row_from_json(self):
-        df_test = self.read_csv_data(
-            filepath='D:\Projekty\Engineering_Thesis\Dataset\Criteo_Conversion_Search\CriteoSearchData.csv', rows=10)
-
+    def add_row_from_json(self, sample_json: json):
         sql = ''' INSERT INTO samples(  Sale,
                                         SalesAmountInEuro,
                                         time_delay_for_conversion,
@@ -103,21 +96,18 @@ class db2:
                                         user_id )
                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) '''
 
+
+        sample_dict = json.loads(sample_json)
+        sample_array = sample_dict.values()
+
         conn = self.__create_connection('samples.db')
         cur = conn.cursor()
-        for id, row in df_test.iterrows():
-            cur.execute(sql, tuple(row.to_list()))
-
+        cur.execute(sql, tuple(sample_array))
         conn.commit()
         conn.close()
         return cur.lastrowid
 
     def select_all(self):
-        """
-        Query all rows in the tasks table
-        :param conn: the Connection object
-        :return:
-        """
         conn = self.__create_connection('samples.db')
         cur = conn.cursor()
         cur.execute("SELECT * FROM samples")
@@ -133,7 +123,8 @@ class db2:
 if __name__ == '__main__':
     db = db2()
     # db.create_table()
-    # db.add_row()
-    # db.add_row()
+    df = db.read_csv_data(
+            filepath='D:\Projekty\Engineering_Thesis\Dataset\Criteo_Conversion_Search\CriteoSearchData.csv', rows=10)
+    one_row = df[1:2].squeeze()
+    db.add_row_from_json(one_row.to_json())
     db.select_all()
-
