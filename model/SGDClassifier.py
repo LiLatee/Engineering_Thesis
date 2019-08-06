@@ -261,7 +261,7 @@ class model_SGDClassifier:
         # y = self.model.predict(tests)
         # print("y: %s\t probability: %s" % (str(y), str(444)))
 
+
 if __name__ == '__main__':
     m = model_SGDClassifier()
     m.test(1000, 5)
-
