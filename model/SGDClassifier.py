@@ -5,6 +5,7 @@ import os
 import json
 import collections
 
+from model import DatabaseSQLite
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler, normalize
@@ -14,6 +15,7 @@ class model_SGDClassifier:
 
     def __init__(self) -> None:
         self.model = None
+        self.sc = None
 
     @staticmethod
     def read_csv_data(filepath, rows):
@@ -198,11 +200,13 @@ class model_SGDClassifier:
         transformed_x = self.transform_one_row_in_one_hot_vectors_row(x)
         transformed_x = transformed_x[3:]  # remove sales features from sample
         transformed_x = self.sc.transform([transformed_x])
-        print(transformed_x)
         transformed_x = normalize(transformed_x, norm='l2')
-        print(transformed_x)
+
         probability = self.model.predict_proba(transformed_x)
         y = self.model.predict(transformed_x)
+
+        db = DatabaseSQLite.DatabaseSQLite()
+        db.add_row_from_json(sample_json=x)
 
         return y, probability
 
@@ -215,12 +219,22 @@ class model_SGDClassifier:
         if not os.path.exists(dest):
             os.makedirs(dest)
         pickle.dump(self.model, open(os.path.join(dest, "SGDClassifier.pkl"), mode='wb'), protocol=4)
+        db = DatabaseSQLite.DatabaseSQLite()
+        model_binary = pickle.dumps(self.model)
+        standard_scaler_binary = pickle.dumps(self.sc)
+        # print(model_binary)
+        # with open('pickle_objects\SGDClassifier.pkl', 'rb') as f:
+        #     model_binary = f.read()
+        db.add_model("SGDClassifier", 0, model_binary, standard_scaler_binary)
+
         print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
 
     def load_model(self):
-        current_dir = os.path.dirname(__file__)
-        self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
-        print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
+        # current_dir = os.path.dirname(__file__)
+        # self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
+        # print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
+        db = DatabaseSQLite.DatabaseSQLite()
+        self.model, self.sc = db.get_model()
 
     def test(self, n_samples_for_training: int, n_samples_for_testing: int) -> None:
         n_samples_toread_from_csv = n_samples_for_training + n_samples_for_testing + 1
@@ -238,12 +252,12 @@ class model_SGDClassifier:
 
         training_data_json = df[1:n_samples_for_training+1].to_json()
 
-        print("Training...")
-        self.create_model_2(training_data_json)
+        # print("Training...")
+        #         # self.create_model_2(training_data_json)
         print("DONE")
         print("Testing...")
         f = np.array([])
-        for id, row in df[n_samples_for_training+2:n_samples_for_training+2+n_samples_for_testing].iterrows():
+        for id, row in df[n_samples_for_training+1:n_samples_for_training+2+n_samples_for_testing].iterrows():
             y, prob = self.predict(row.to_json())
             f = np.append(f, y)
 
@@ -264,4 +278,5 @@ class model_SGDClassifier:
 
 if __name__ == '__main__':
     m = model_SGDClassifier()
+    m.load_model()
     m.test(1000, 5)
