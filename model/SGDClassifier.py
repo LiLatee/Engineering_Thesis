@@ -16,6 +16,7 @@ class model_SGDClassifier:
     def __init__(self) -> None:
         self.model = None
         self.sc = None
+        self.last_sample_id = None
 
     @staticmethod
     def read_csv_data(filepath, rows):
@@ -111,7 +112,7 @@ class model_SGDClassifier:
         # lr.fit(X_train_std, y_train)
 
         # X_train_std, X_val_std, y_train, y_val = train_test_split(X_train_std, y_train, test_size=0.2, random_state=1)
-        lr = SGDClassifier(loss='log', verbose=0, n_jobs=-1, random_state=1, tol=1e-3, max_iter=1000)
+        lr = SGDClassifier(loss='log', verbose=0, n_jobs=-1, random_state=1, tol=1e-3, max_iter=1000, shuffle=True)
         lr.fit(X_train_std, y_train)
 
         print(collections.Counter(y_test))
@@ -159,7 +160,20 @@ class model_SGDClassifier:
         print('Dokładność: %.2f' % lr.score(X_test_std, y_test))
 
     def update_model(self) -> None:
-        pass
+        db = DatabaseSQLite.DatabaseSQLite()
+        df_samples_to_update = db.get_samples_to_update_model()
+        df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(df_samples_to_update)
+
+        x = df_one_hot_vectors.iloc[:, 3:].values
+        y = df_one_hot_vectors['Sale'].values.ravel()
+        print(df_one_hot_vectors)
+        x = self.sc.transform(x)
+        x = normalize(x, norm='l2')
+        y = np.array([int(i) for i in y])
+
+        self.model.partial_fit(x, y, classes=np.array([0, 1]))
+        self.save_model()
+        print("LOG: updating model DONE")
 
     def read_required_column_names(self) -> list:
         required_column_name_file = open('required_column_names_list.txt', 'r')
@@ -214,27 +228,28 @@ class model_SGDClassifier:
         if self.model is None:
             print("LOG: " + "model is not created")
             return
-        current_dir = os.path.dirname(__file__)
-        dest = os.path.join('pickle_objects')
-        if not os.path.exists(dest):
-            os.makedirs(dest)
-        pickle.dump(self.model, open(os.path.join(dest, "SGDClassifier.pkl"), mode='wb'), protocol=4)
+        # zapisywanie modelu do pliku
+        # current_dir = os.path.dirname(__file__)
+        # dest = os.path.join('pickle_objects')
+        # if not os.path.exists(dest):
+        #     os.makedirs(dest)
+        # pickle.dump(self.model, open(os.path.join(dest, "SGDClassifier.pkl"), mode='wb'), protocol=4)
+        # print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
+
+
         db = DatabaseSQLite.DatabaseSQLite()
         model_binary = pickle.dumps(self.model)
         standard_scaler_binary = pickle.dumps(self.sc)
-        # print(model_binary)
-        # with open('pickle_objects\SGDClassifier.pkl', 'rb') as f:
-        #     model_binary = f.read()
-        db.add_model("SGDClassifier", 0, model_binary, standard_scaler_binary)
+        last_sample_id = db.get_last_sample_id()
+        db.add_model("SGDClassifier", 0, last_sample_id, model_binary, standard_scaler_binary)
 
-        print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
 
     def load_model(self):
         # current_dir = os.path.dirname(__file__)
         # self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
         # print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
         db = DatabaseSQLite.DatabaseSQLite()
-        self.model, self.sc = db.get_model()
+        self.model, self.sc, _ = db.get_last_model()
 
     def test(self, n_samples_for_training: int, n_samples_for_testing: int) -> None:
         n_samples_toread_from_csv = n_samples_for_training + n_samples_for_testing + 1
@@ -253,8 +268,8 @@ class model_SGDClassifier:
         training_data_json = df[1:n_samples_for_training+1].to_json()
 
         # print("Training...")
-        #         # self.create_model_2(training_data_json)
-        print("DONE")
+        # self.create_model_2(training_data_json)
+        # print("DONE")
         print("Testing...")
         f = np.array([])
         for id, row in df[n_samples_for_training+1:n_samples_for_training+2+n_samples_for_testing].iterrows():
@@ -279,4 +294,5 @@ class model_SGDClassifier:
 if __name__ == '__main__':
     m = model_SGDClassifier()
     m.load_model()
-    m.test(1000, 5)
+    m.update_model()
+    # m.test(1000, 5)

@@ -1,4 +1,3 @@
-import sqlalchemy as db
 import pandas as pd
 import sqlite3
 import time
@@ -7,7 +6,7 @@ import pickle
 
 from sqlite3 import Error
 
-
+#TODO: id modelu przy wyszukiwaniu zmienić ze stałej
 class DatabaseSQLite:
     def __init__(self):
         self.create_tables()
@@ -53,6 +52,7 @@ class DatabaseSQLite:
         name TEXT,
         version INTEGER,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_sample_id INTEGER,
         model BLOB,
         standard_scaler BLOB
         );
@@ -105,30 +105,47 @@ class DatabaseSQLite:
         conn.close()
         return cur.lastrowid
     
-    def add_model(self, name, version, binary_model, binary_standard_scaler ):
-        sql_query = """ INSERT INTO model_history (name, version, model, standard_scaler) VALUES (?,?,?,?)"""
+    def add_model(self, name, version, last_sample_id, binary_model, binary_standard_scaler):
+        sql_query = """ INSERT INTO model_history (name, version, last_sample_id, model, standard_scaler) VALUES (?,?,?,?,?)"""
         conn = self.__create_connection('sqlite3.db')
         cur = conn.cursor()
-        cur.execute(sql_query, (name, version, sqlite3.Binary(binary_model), sqlite3.Binary(binary_standard_scaler)))
+        cur.execute(sql_query, (name, version, last_sample_id, sqlite3.Binary(binary_model), sqlite3.Binary(binary_standard_scaler)))
         conn.commit()
         conn.close()
 
-    def get_model(self):
-        sql_query = """ SELECT model FROM model_history
-                        WHERE id = 1"""
+    def get_last_model(self):
+        sql_query = """ SELECT model, standard_scaler, last_sample_id FROM model_history
+                        WHERE id = (SELECT max(id) FROM model_history)"""
         conn = self.__create_connection('sqlite3.db')
         result = conn.execute(sql_query).fetchone()
         model = pickle.loads(result[0])
-        sql_query = """ SELECT standard_scaler FROM model_history
-                        WHERE id = 1"""
+        standard_scaler = result[1]
+        last_sample_id = result[2]
+
+        return model, standard_scaler, last_sample_id
+
+    def get_last_sample_id(self) -> int:
+        conn = self.__create_connection('sqlite3.db')
+        sql_query = """SELECT id from samples WHERE id=(SELECT max(id) FROM samples) """
         result = conn.execute(sql_query).fetchone()
-        standard_scaler = pickle.loads(result[0])
+        return result[0]
 
-        return model, standard_scaler
+    def get_samples_to_update_model(self) -> pd.DataFrame:
+        conn = self.__create_connection('sqlite3.db')
+        _ , _ , last_sample_id = self.get_last_model()
+        df = pd.read_sql_query('SELECT * FROM samples WHERE id >' + str(last_sample_id), conn)
+        return df
 
-    def select_all_samples_as_df(self) -> pd.DataFrame:
+    def get_all_models_history_as_df(self) -> pd.DataFrame:
+        conn = self.__create_connection('sqlite3.db')
+        df = pd.read_sql_query('SELECT * FROM model_history', conn)
+        return df
+
+    def get_all_samples_as_df(self) -> pd.DataFrame:
         conn = self.__create_connection('sqlite3.db')
         df = pd.read_sql_query('SELECT * FROM samples', conn)
+        conn.commit()
+        conn.close()
         return df
 
         # cur = conn.cursor()
@@ -138,8 +155,7 @@ class DatabaseSQLite:
         # for row in rows:
         #     print(row)
         #
-        # conn.commit()
-        # conn.close()
+
 
     @staticmethod
     def read_csv_data(filepath, rows):
@@ -157,12 +173,14 @@ class DatabaseSQLite:
             usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
         return df
 
+
 if __name__ == '__main__':
     db = DatabaseSQLite()
-    # db.create_table()
+    # db.create_tables()
     df = db.read_csv_data(
             filepath='D:\Projekty\Engineering_Thesis\Dataset\Criteo_Conversion_Search\CriteoSearchData.csv', rows=10)
     one_row = df[1:2].squeeze()
     # db.add_row_from_json(one_row.to_json())
     # print(db.select_all_samples_as_df())
-    db.get_model()
+    # print(db.get_all_models_history_as_df()['last_sample_id'])
+
