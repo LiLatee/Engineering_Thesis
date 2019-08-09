@@ -1,4 +1,3 @@
-import time
 import tasks
 from redis_client import set_model_version
 from SGDClassifier import model_SGDClassifier
@@ -25,7 +24,7 @@ class MLModel:
         return self.model.predict(sample)
 
     def update_start(self, data_json):
-        tasks.update_model.delay(data_json)
+        tasks.run_update_model(data_json)
 
     def update_ready(self, file_name):
         print("Model is replaced with updated one from file " + str(file_name))

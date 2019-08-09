@@ -2,10 +2,9 @@ matplotlib==3.0.3
 scipy==1.2.1
 numpy==1.16.2
 scikit-learn[alldeps]
-
 pandas==0.25.0
 websockets==8.0.2
 Flask==1.1.1
 requests==2.22.0
-celery==4.3.0
 redis==3.3.5
+rq==1.1.0

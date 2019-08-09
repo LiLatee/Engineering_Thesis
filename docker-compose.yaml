@@ -11,24 +11,20 @@ services:
     entrypoint: redis-server --appendonly yes
     restart: always
 
-#  worker:
-#    container_name: worker
-#    build: .
-#    volumes:
-#      - ./prediction_server:/usr/src/app
-#    command: celery worker -B -l info -A tasks
-#    depends_on:
-#      - redis_service
-#      - prediction_server
-#    links:
-#      - redis_service
-
   prediction_server:
       build: ./prediction_server
       volumes:
         - ./prediction_server:/usr/src/app
       ports:
         - 5000:5000
+
+  worker:
+    image: engineeringthesis_prediction_server:latest
+    command: rq worker --url redis://redis_service:6379 queue_update_model
+    depends_on:
+      - redis_service
+    links:
+      - redis_service
 
   client:
     build: ./client
