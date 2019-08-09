@@ -13,18 +13,14 @@ def hello_world():
 
 @app.route('/fit', methods=['POST'])
 def fit():
-    # data = pd.DataFrame(data=json.loads(request.data))
-    # print(data)
     model.fit(request.data)
-    # model.fit(json.loads(request.data))
     return ''
 
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    # sample = pd.Series(data=json.loads(request.data))
-    # print(sample)
-    model.predict(request.data)
+    result = model.predict(request.data)
+    print("Result=" + str(result))
     return ''
 
 

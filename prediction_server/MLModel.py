@@ -21,9 +21,8 @@ class MLModel:
     def predict(self, sample):
         print("Prediction is being made")
         print("Sample: " + str(sample))
-        self.model.predict(sample)
         print('model.version=' + str(self.version))
-        pass
+        return self.model.predict(sample)
 
     def update_start(self, data_json):
         tasks.update_model.delay(data_json)
