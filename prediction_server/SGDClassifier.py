@@ -10,6 +10,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler, normalize
 
+from tasks import run_update_model
+import requests
 
 class model_SGDClassifier:
 
@@ -160,6 +162,7 @@ class model_SGDClassifier:
         print('Dokładność: %.2f' % lr.score(X_test_std, y_test))
 
     def update_model(self) -> None:
+        # run_update_model(self.model, self.sc)
         db = DatabaseSQLite.DatabaseSQLite()
         df_samples_to_update = db.get_samples_to_update_model()
         df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(df_samples_to_update)
@@ -173,6 +176,9 @@ class model_SGDClassifier:
 
         self.model.partial_fit(x, y, classes=np.array([0, 1]))
         self.save_model()
+        requests.request(method='GET', url='http://engineeringthesis_prediction_server_1:5000/update_ready',
+                         data='new_model_file_name.pkl')
+
         print("LOG: updating model DONE")
 
     def read_required_column_names(self) -> list:

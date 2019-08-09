@@ -24,10 +24,9 @@ class MLModel:
         return self.model.predict(sample)
 
     def update_start(self, data_json):
-        tasks.run_update_model(data_json)
+        self.model.update_model()
 
-    def update_ready(self, file_name):
-        print("Model is replaced with updated one from file " + str(file_name))
+    def update_ready(self):
         self.update_version()
 
     def update_version(self):

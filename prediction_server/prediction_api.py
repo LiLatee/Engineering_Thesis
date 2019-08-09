@@ -34,7 +34,7 @@ def update_start():
 # sends signal to model, that updated model is ready and models should be replaced
 @app.route('/update_ready', methods=['GET'])
 def update_ready():
-    model.update_ready(file_name=request.data)
+    model.update_ready()
     return ''
 
 
