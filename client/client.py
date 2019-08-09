@@ -8,7 +8,7 @@ import json
 
 not_sorted_data_file_name = '../data/CriteoSearchData.csv'
 data_file_name = 'data/CriteoSearchDataSorted.csv'
-train_model_samples_number = 100000
+train_model_samples_number = 1000
 
 headers = ['Sale', 'SalesAmountInEuro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
            'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',

@@ -11,17 +11,17 @@ services:
     entrypoint: redis-server --appendonly yes
     restart: always
 
-  worker:
-    container_name: worker
-    build: .
-    volumes:
-      - ./prediction_server:/usr/src/app
-    command: celery worker -B -l info -A tasks
-    depends_on:
-      - redis_service
-      - prediction_server
-    links:
-      - redis_service
+#  worker:
+#    container_name: worker
+#    build: .
+#    volumes:
+#      - ./prediction_server:/usr/src/app
+#    command: celery worker -B -l info -A tasks
+#    depends_on:
+#      - redis_service
+#      - prediction_server
+#    links:
+#      - redis_service
 
   prediction_server:
       build: ./prediction_server
