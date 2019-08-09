@@ -11,3 +11,5 @@ venv.bak/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+**/sqlite3.db
