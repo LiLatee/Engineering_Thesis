@@ -11,14 +11,15 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler, normalize
 
 
-class model_SGDClassifier:
+class ModeSGDClassifier:
 
     def __init__(self) -> None:
         self.model = None
         self.sc = None
+        self.df_original = None
 
     @staticmethod
-    def read_csv_data(filepath, rows):
+    def read_csv_data(filepath: str, rows: int) -> pd.DataFrame:
         headers = ['Sale', 'SalesAmountInEuro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
                    'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',
                    'product_brand', 'product_category(1)', 'product_category(2)', 'product_category(3)',
@@ -34,24 +35,7 @@ class model_SGDClassifier:
         return df
 
     @staticmethod
-    def create_one_hot_vectors(df):
-        # print("=========================Liczba unikalnych wartości w każdej kolumnie=========================")
-        # columns = list(df)
-        # count_of_unique_values_in_each_row = []
-        # for i, c in enumerate(columns):
-        #     count = len(np.unique(df[c].values))
-        #     print(str(i) + "\t" + str(count) + "\t" + c)
-        #     count_of_unique_values_in_each_row.append(count)
-        #
-        # index_of_columns_with_lower_than_1000_unique_values = []
-        # excluded_indexes = [0, 1, 2, 3, 4, 5, 6]
-        # for id, count in enumerate(count_of_unique_values_in_each_row):
-        #     if id not in excluded_indexes:
-        #         if count < 1000:
-        #             index_of_columns_with_lower_than_1000_unique_values.append(id)
-        #
-        # df = pd.get_dummies(df.iloc[:, index_of_columns_with_lower_than_1000_unique_values])
-
+    def create_one_hot_vectors(df: pd.DataFrame) -> pd.DataFrame:
         index_of_columns_to_change_to_one_hot_vectors = [6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18, 21]
 
         df_only_one_hot_vectors_columns = pd.get_dummies(df.iloc[:, index_of_columns_to_change_to_one_hot_vectors])
@@ -61,24 +45,12 @@ class model_SGDClassifier:
         return df
 
     def transform_df_into_df_with_one_hot_vectors(self, df_to_transform: pd.DataFrame) -> pd.DataFrame:
-        required_column_names_list = self.read_required_column_names()
         data_as_dict = json.loads(df_to_transform.T.to_json())
 
         samples = []
-        for row_number in data_as_dict:
-            transformed_row_as_dict = dict.fromkeys(required_column_names_list)
-            transformed_row_as_dict['Sale'] = data_as_dict[str(row_number)]['Sale']
-            transformed_row_as_dict['SalesAmountInEuro'] = data_as_dict[str(row_number)]['SalesAmountInEuro']
-            transformed_row_as_dict['time_delay_for_conversion'] = data_as_dict[str(row_number)][
-                'time_delay_for_conversion']
-            transformed_row_as_dict['click_timestamp'] = data_as_dict[str(row_number)]['click_timestamp']
-            transformed_row_as_dict['nb_clicks_1week'] = data_as_dict[str(row_number)]['nb_clicks_1week']
-            for column_number, (column_name, cell_value) in enumerate(
-                    zip(data_as_dict[row_number].keys(), data_as_dict[row_number].values())):
-                if column_number > 2:
-                    transformed_column_name = column_name + '_' + str(cell_value)
-                    if transformed_column_name in required_column_names_list:
-                        transformed_row_as_dict[transformed_column_name] = 1
+        for row_number, row_as_dict in data_as_dict.items():
+            transformed_row_as_dict = self.create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns(row_as_dict)
+            transformed_row_as_dict = self.set_values_to_one_hot_vectors_columns(row_as_dict, transformed_row_as_dict)
             samples.append(transformed_row_as_dict)
 
         df = pd.DataFrame(samples)
@@ -86,23 +58,33 @@ class model_SGDClassifier:
 
         return df
 
-    def create_model_2(self, json_data: str) -> None:
-        self.df_original = pd.read_json(json_data)
+    def set_values_to_one_hot_vectors_columns(self, old_dict: dict, new_dict: dict) -> dict:
+        required_column_names_list = self.read_required_column_names()
 
-        df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(self.df_original)
-        X = df_one_hot_vectors.iloc[:, 3:].values
-        y = df_one_hot_vectors.iloc[:, :1].values.ravel()  # tutaj powinny być chyba 3 kolumny
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
-        # print('Liczba etykiet w zbiorze y:', np.bincount(y))
-        # print('Liczba etykiet w zbiorze y_train:', np.bincount(y_train))
-        # print('Liczba etykiet w zbiorze y_test:', np.bincount(y_test))
+        for column_number, (column_name, cell_value) in enumerate(old_dict.items()):
+            if column_number > 2:
+                transformed_column_name = column_name + '_' + str(cell_value)
+                if transformed_column_name in required_column_names_list:
+                    new_dict[transformed_column_name] = 1
 
-        self.sc = StandardScaler()
-        self.sc.fit(X_train)
-        X_train_std = self.sc.transform(X_train)
-        X_train_std = normalize(X_train_std, norm='l2')
-        X_test_std = self.sc.transform(X_test)
-        X_test_std = normalize(X_test_std, norm='l2')
+        return new_dict
+
+    def create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns(self, old_dict: dict) -> dict:
+        required_column_names_list = self.read_required_column_names()
+
+        new_dict = old_dict.fromkeys(required_column_names_list)
+        new_dict['Sale'] = old_dict['Sale']
+        new_dict['SalesAmountInEuro'] = old_dict['SalesAmountInEuro']
+        new_dict['time_delay_for_conversion'] = old_dict[
+            'time_delay_for_conversion']
+        new_dict['click_timestamp'] = old_dict['click_timestamp']
+        new_dict['nb_clicks_1week'] = old_dict['nb_clicks_1week']
+        return new_dict
+
+    def create_model_and_save(self, json_training_data: str) -> None:
+        self.df_original = pd.read_json(json_training_data)
+
+        x_test_std, x_train_std, y_test, y_train = self.create_train_and_test_sets()
 
         # ppn = Perceptron(eta0=0.1, random_state=1, n_jobs=-1)
         # ppn.fit(X_train_std, y_train)
@@ -112,51 +94,35 @@ class model_SGDClassifier:
 
         # X_train_std, X_val_std, y_train, y_val = train_test_split(X_train_std, y_train, test_size=0.2, random_state=1)
         lr = SGDClassifier(loss='log', verbose=0, n_jobs=-1, random_state=1, tol=1e-3, max_iter=1000)
-        lr.fit(X_train_std, y_train)
+        lr.fit(x_train_std, y_train)
 
         print(collections.Counter(y_test))
-        y_pred = lr.predict(X_test_std)
+        y_pred = lr.predict(x_test_std)
         print(collections.Counter(y_pred))
 
         print('Nieprawidłowo sklasyfikowane próbki: %d' % (y_test != y_pred).sum())
-        print('Dokładność: %.2f' % lr.score(X_test_std, y_test))
+        print('Dokładność: %.2f' % lr.score(x_test_std, y_test))
 
         self.model = lr
         self.save_model()
 
-    def create_model(self, rows, filepath):
-        self.df_original = self.read_csv_data(filepath=filepath, rows=rows)
-        print("=========================Liczba brakujących wartości w każdej kolumnie=========================")
-        print(self.df_original.isnull().sum())
-        df = self.df_original.dropna(axis=0) # usuwanie wierszy, które zawierają null - kolumna np. kolumna title posiada
-
-        df = self.create_one_hot_vectors(df)
-
-
-        X = df.iloc[:, 3:].values # pierwsze 3 kolumny to nasze y, my używamy tylko jednej z nich
-        y = df.iloc[:, :1].values.ravel()
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
+    def create_train_and_test_sets(self):
+        df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(self.df_original)
+        X = df_one_hot_vectors.iloc[:, 3:].values
+        y = df_one_hot_vectors.iloc[:, :1].values.ravel()  # tutaj powinny być chyba 3 kolumny
+        x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
         # print('Liczba etykiet w zbiorze y:', np.bincount(y))
         # print('Liczba etykiet w zbiorze y_train:', np.bincount(y_train))
         # print('Liczba etykiet w zbiorze y_test:', np.bincount(y_test))
 
+        self.sc = StandardScaler()
+        self.sc.fit(x_train)
+        x_train_std = self.sc.transform(x_train)
+        x_train_std = normalize(x_train_std, norm='l2')
+        x_test_std = self.sc.transform(x_test)
+        x_test_std = normalize(x_test_std, norm='l2')
+        return x_test_std, x_train_std, y_test, y_train
 
-        sc = StandardScaler()
-        sc.fit(X_train)
-        X_train_std = sc.transform(X_train)
-        X_train_std = normalize(X_train_std, norm='l2')
-        X_test_std = sc.transform(X_test)
-        X_test_std = normalize(X_test_std, norm='l2')
-
-
-        lr = SGDClassifier(loss='log', verbose=0, n_jobs=-1, random_state=1)
-        lr.fit(X_train_std, y_train)
-
-        self.model = lr
-
-        y_pred = lr.predict(X_test_std)
-        print('Nieprawidłowo sklasyfikowane próbki: %d' % (y_test != y_pred).sum())
-        print('Dokładność: %.2f' % lr.score(X_test_std, y_test))
 
     def update_model(self) -> None:
         pass
@@ -277,6 +243,9 @@ class model_SGDClassifier:
 
 
 if __name__ == '__main__':
-    m = model_SGDClassifier()
-    m.load_model()
-    m.test(1000, 5)
+    m = ModeSGDClassifier()
+    df = m.read_csv_data("/home/marcin/PycharmProjects/Engineering_Thesis/client/CriteoSearchData-sorted.csv", 3)
+    df2 = m.transform_df_into_df_with_one_hot_vectors(df)
+    print(df2)
+    # m.load_model()
+    # m.test(1000, 5)

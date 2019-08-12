@@ -14,7 +14,7 @@ class MLModel:
 
     def fit(self, data):
         print("Model is trained...")
-        self.model.create_model_2(data)
+        self.model.create_model_and_save(data)
         print("Done.")
         pass
 
