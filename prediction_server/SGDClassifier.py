@@ -4,14 +4,17 @@ import pickle
 import os
 import json
 import collections
-
 import DatabaseSQLite
+
+from typing import List, Dict, NoReturn, Union, Any, Optional, Tuple
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler, normalize
 
+JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
+RowAsDictType = Dict[str, Union[str, float, int]]
 
-class ModeSGDClassifier:
+class ModelSGDClassifier:
 
     def __init__(self) -> None:
         self.model = None
@@ -59,7 +62,7 @@ class ModeSGDClassifier:
 
         return df
 
-    def set_values_to_one_hot_vectors_columns(self, old_dict: dict, new_dict: dict) -> dict:
+    def set_values_to_one_hot_vectors_columns(self, old_dict: RowAsDictType, new_dict: RowAsDictType) -> RowAsDictType:
         required_column_names_list = self.read_required_column_names()
 
         for column_number, (column_name, cell_value) in enumerate(old_dict.items()):
@@ -70,19 +73,22 @@ class ModeSGDClassifier:
 
         return new_dict
 
-    def create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns(self, old_dict: dict) -> dict:
+    def create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns(self, old_dict: RowAsDictType) -> RowAsDictType:
         required_column_names_list = self.read_required_column_names()
 
-        new_dict = old_dict.fromkeys(required_column_names_list)
+        new_dict = dict.fromkeys(required_column_names_list)
         new_dict['Sale'] = old_dict['Sale']
         new_dict['SalesAmountInEuro'] = old_dict['SalesAmountInEuro']
         new_dict['time_delay_for_conversion'] = old_dict[
             'time_delay_for_conversion']
         new_dict['click_timestamp'] = old_dict['click_timestamp']
         new_dict['nb_clicks_1week'] = old_dict['nb_clicks_1week']
+        # print("REMOVE")
+        # print(type(new_dict))
+        # print(type(new_dict['Sale']))
         return new_dict
 
-    def create_model_and_save(self, json_training_data: str) -> None:
+    def create_model_and_save(self, json_training_data: JSONType) -> NoReturn:
         self.df_original = pd.read_json(json_training_data)
 
         x_test_std, x_train_std, y_test, y_train = self.create_train_and_test_sets()
@@ -107,7 +113,7 @@ class ModeSGDClassifier:
         self.model = lr
         self.save_model()
 
-    def create_train_and_test_sets(self):
+    def create_train_and_test_sets(self) -> (Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]):
         df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(self.df_original)
         X = df_one_hot_vectors.iloc[:, 3:].values
         y = df_one_hot_vectors.iloc[:, :1].values.ravel()  # tutaj powinny być chyba 3 kolumny
@@ -122,17 +128,18 @@ class ModeSGDClassifier:
         x_train_std = normalize(x_train_std, norm='l2')
         x_test_std = self.sc.transform(x_test)
         x_test_std = normalize(x_test_std, norm='l2')
+        # print('REMOVE2')
+        # print(type(x_test_std))
+        # print(type(x_test_std[0]))
         return x_test_std, x_train_std, y_test, y_train
 
-
-    def update_model(self) -> None:
+    def update_model(self) -> NoReturn:
         db = DatabaseSQLite.DatabaseSQLite()
         df_samples_to_update = db.get_samples_to_update_model()
         df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(df_samples_to_update)
 
         x = df_one_hot_vectors.iloc[:, 3:].values
         y = df_one_hot_vectors['Sale'].values.ravel()
-        print(df_one_hot_vectors)
         x = self.sc.transform(x)
         x = normalize(x, norm='l2')
         y = np.array([int(i) for i in y])
@@ -141,21 +148,23 @@ class ModeSGDClassifier:
         self.save_model()
         print("LOG: updating model DONE")
 
-    def read_required_column_names(self) -> list:
+    @staticmethod
+    def read_required_column_names() -> List[str]:
         required_column_name_file = open('required_column_names_list.txt', 'r')
         required_column_names_list = required_column_name_file.read().splitlines()
         return required_column_names_list
 
-    def remove_nones_in_dict(self, dictionary: dict):
+    @staticmethod
+    def remove_nones_in_dict(dictionary: RowAsDictType):
         result = {}
         for k, v in dictionary.items():
             if v is None:
-                result[k] = 0
+                result[k] = 0 #TODO zmienić aby wszystko w dataframeach i slownikach bylo str
             else:
                 result[k] = v
         return result
 
-    def transform_one_row_in_one_hot_vectors_row(self, row_as_json: json) -> list:
+    def transform_one_row_in_one_hot_vectors_row(self, row_as_json: JSONType) -> List[RowAsDictType]:
         required_column_names_list = self.read_required_column_names()
 
         row_as_dict = json.loads(row_as_json)
@@ -176,7 +185,7 @@ class ModeSGDClassifier:
 
         return list(transformed_row_as_dict.values())
 
-    def predict(self, x: json):
+    def predict(self, x: JSONType) -> Tuple[List[Union[int, float]]]:
         transformed_x = self.transform_one_row_in_one_hot_vectors_row(x)
         transformed_x = transformed_x[3:]  # remove sales features from sample
         transformed_x = self.sc.transform([transformed_x])
@@ -188,9 +197,14 @@ class ModeSGDClassifier:
         db = DatabaseSQLite.DatabaseSQLite()
         db.add_row_from_json(sample_json=x)
 
+        print('REMOVE')
+        print((type(y)))
+        print((type(probability[0])))
+        print((type(probability[0][0])))
+
         return y, probability
 
-    def save_model(self):
+    def save_model(self) -> NoReturn:
         if self.model is None:
             print("LOG: " + "model is not created")
             return
@@ -202,29 +216,27 @@ class ModeSGDClassifier:
         # pickle.dump(self.model, open(os.path.join(dest, "SGDClassifier.pkl"), mode='wb'), protocol=4)
         # print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
 
-
         db = DatabaseSQLite.DatabaseSQLite()
         model_binary = pickle.dumps(self.model)
         standard_scaler_binary = pickle.dumps(self.sc)
         last_sample_id = db.get_last_sample_id()
         db.add_model("SGDClassifier", 0, last_sample_id, model_binary, standard_scaler_binary)
 
-
-    def load_model(self):
+    def load_model(self) -> NoReturn:
         # current_dir = os.path.dirname(__file__)
         # self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
         # print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
         db = DatabaseSQLite.DatabaseSQLite()
         self.model, self.sc, _ = db.get_last_model()
 
-    def test(self, n_samples_for_training: int, n_samples_for_testing: int) -> None:
+    def test(self, n_samples_for_training: int, n_samples_for_testing: int) -> NoReturn:
         n_samples_toread_from_csv = n_samples_for_training + n_samples_for_testing + 1
         headers = ['Sale', 'SalesAmountInEuro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
                    'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',
                    'product_brand', 'product_category(1)', 'product_category(2)', 'product_category(3)',
                    'product_category(4)', 'product_category(5)', 'product_category(6)', 'product_category(7)',
                    'product_country', 'product_id', 'product_title', 'partner_id', 'user_id']
-        df = pd.read_csv('D:\Projekty\Engineering_Thesis\Dataset\Criteo_Conversion_Search\CriteoSearchData-sorted.csv',
+        df = pd.read_csv('/home/marcin/PycharmProjects/Engineering_Thesis/dataset/CriteoSearchData-sorted.csv',
                          sep='\t',
                          nrows=n_samples_toread_from_csv,
                          names=headers,
@@ -234,7 +246,7 @@ class ModeSGDClassifier:
         training_data_json = df[1:n_samples_for_training+1].to_json()
 
         # print("Training...")
-        # self.create_model_2(training_data_json)
+        # self.create_model_and_save(training_data_json)
         # print("DONE")
         print("Testing...")
         f = np.array([])
@@ -246,19 +258,20 @@ class ModeSGDClassifier:
 
 
 
-        # tests = []
-        # for id, row in df[1001:2000].iterrows():
-        #     transformed_x = self.transform_one_row_in_one_hot_vectors_row(row.to_json())
-        #     transformed_x = transformed_x[3:]  # remove sales features from sample
-        #     tests.append(transformed_x)
-        # tests = np.asarray(tests)
-        # tests = self.sc.transform(tests)
-        # y = self.model.predict(tests)
-        # print("y: %s\t probability: %s" % (str(y), str(444)))
+        tests = []
+        for id, row in df[1001:2000].iterrows():
+            transformed_x = self.transform_one_row_in_one_hot_vectors_row(row.to_json())
+            transformed_x = transformed_x[3:]  # remove sales features from sample
+            tests.append(transformed_x)
+        tests = np.asarray(tests)
+        tests = self.sc.transform(tests)
+        y = self.model.predict(tests)
+        probability = self.model.predict_proba(tests)
+        print("y: %s\t probability: %s" % (str(y), str(probability)))
 
 
 if __name__ == '__main__':
-    m = model_SGDClassifier()
+    m = ModelSGDClassifier()
     m.load_model()
-    m.update_model()
-    # m.test(1000, 5)
+    # m.update_model()
+    m.test(1000, 5)

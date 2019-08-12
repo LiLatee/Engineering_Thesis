@@ -5,6 +5,7 @@ import pickle
 
 from sqlite3 import Error
 
+
 #TODO: id modelu przy wyszukiwaniu zmienić ze stałej
 class DatabaseSQLite:
     def __init__(self):
@@ -118,7 +119,7 @@ class DatabaseSQLite:
         conn = self.__create_connection('sqlite3.db')
         result = conn.execute(sql_query).fetchone()
         model = pickle.loads(result[0])
-        standard_scaler = result[1]
+        standard_scaler = pickle.loads(result[1])
         last_sample_id = result[2]
 
         return model, standard_scaler, last_sample_id
@@ -127,6 +128,8 @@ class DatabaseSQLite:
         conn = self.__create_connection('sqlite3.db')
         sql_query = """SELECT id from samples WHERE id=(SELECT max(id) FROM samples) """
         result = conn.execute(sql_query).fetchone()
+        if result is None:
+            return -1
         return result[0]
 
     def get_samples_to_update_model(self) -> pd.DataFrame:
@@ -177,7 +180,7 @@ if __name__ == '__main__':
     db = DatabaseSQLite()
     # db.create_tables()
     df = db.read_csv_data(
-            filepath='D:\Projekty\Engineering_Thesis\Dataset\Criteo_Conversion_Search\CriteoSearchData.csv', rows=10)
+            filepath='/home/marcin/PycharmProjects/Engineering_Thesis/dataset/CriteoSearchData-sorted.csv', rows=10)
     one_row = df[1:2].squeeze()
     # db.add_row_from_json(one_row.to_json())
     # print(db.select_all_samples_as_df())
