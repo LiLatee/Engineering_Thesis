@@ -12,10 +12,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler, normalize
 
+import redis
+from rq import Queue
+import requests
+
 JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 RowAsDictType = Dict[str, Union[str, float, int]]
-from tasks import run_update_model
-import requests
 
 class ModelSGDClassifier:
 
@@ -136,7 +138,15 @@ class ModelSGDClassifier:
         # print(type(x_test_std[0]))
         return x_test_std, x_train_std, y_test, y_train
 
+    # run async task
     def update_model(self) -> NoReturn:
+        redis_conn = redis.Redis(host='redis_service', port=6379, db=0)
+        q = Queue('queue_update_model', connection=redis_conn)
+
+        q.enqueue(self.task_update_model)
+
+
+    def task_update_model(self):
         db = DatabaseSQLite.DatabaseSQLite()
         df_samples_to_update = db.get_samples_to_update_model()
         df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(df_samples_to_update)

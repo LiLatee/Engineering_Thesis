@@ -49,7 +49,7 @@ async def process_all_samples(websocket, path):
             # print(samples_num)
             await send_model_info_to_websocket(websocket, samples_num)
             requests.request(method='POST', url='http://engineeringthesis_prediction_server_1:5000/predict', data=row.to_json())
-            if samples_num % 200 == 0:
+            if samples_num % 100 == 0:
                 requests.request(method='GET', url='http://engineeringthesis_prediction_server_1:5000/update_start', data=chunk.to_json())
 
 
