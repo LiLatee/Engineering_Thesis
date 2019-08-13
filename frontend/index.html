@@ -10,6 +10,7 @@
 
       <!--Let browser know website is optimized for mobile-->
       <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="js/plotly-latest.min.js"></script>
 
 </head>
 <body>
@@ -25,29 +26,54 @@
         <h4>Current model version:</h4>
         <h4 id="model-version"></h4>
     </div>
+    <div id="chart"></div>
     <script type="text/javascript">
-        var ws = new WebSocket("ws://0.0.0.0:8765");
+
+        var ws_client = new WebSocket("ws://0.0.0.0:8765");
+        var ws_eval = new WebSocket("ws://0.0.0.0:8766");
+
         var start_button = document.querySelector('.start-button');
-        start_button.onclick = function (event) {
+
+        start_button.onclick = async function (event) {
             console.log('start');
-            ws.send('start');
+            ws_client.send('start');
+            ws_eval.send('start');
 
             var samples = document.getElementById("samples");
             var model_name = document.getElementById("model-name");
             var model_version = document.getElementById("model-version");
-            ws.onmessage = function (event) {
+            ws_client.onmessage = async function (event) {
                 var message = JSON.parse(event.data);
-                console.log(message);
+<!--                console.log(message);-->
+                samples_counter = message["samples"];
                 samples.innerHTML = message["samples"];
                 model_name.innerHTML = message["model_name"];
                 model_version.innerHTML = message["model_version"];
             };
         }
 
+        Plotly.plot('chart',[{
+            y:[0],
+            type:'line'
+        }]);
+        var cnt = 0;
+        ws_eval.onmessage = async function (event) {
+            var message = JSON.parse(event.data);
+            console.log(message);
+            var correct_prediction_ratio = message["correct_predictions"] / message["processed_samples"];
+            Plotly.extendTraces('chart',{ y:[[correct_prediction_ratio]]}, [0]);
+            cnt++;
 
+            if(cnt > 500) {
+                Plotly.relayout('chart',{
+                    xaxis: {
+                       range: [cnt-500,cnt]
+                    }
+                });
+            }
+        }
 
     </script>
-
     <script type="text/javascript" src="js/materialize.min.js"></script>
 </body>
 </html>

@@ -32,3 +32,10 @@ services:
       - ./client:/usr/src/app
     ports:
       - 8765:8765
+
+  evaluation_server:
+    build: ./evaluation_server
+    volumes:
+      - ./evaluation_server:/usr/src/app
+    ports:
+      - 8766:8766
