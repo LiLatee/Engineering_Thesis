@@ -150,8 +150,7 @@ class ModelSGDClassifier:
 
         self.model.partial_fit(x, y, classes=np.array([0, 1]))
         self.save_model()
-        requests.request(method='GET', url='http://engineeringthesis_prediction_server_1:5000/update_ready',
-                         data='new_model_file_name.pkl')
+        requests.request(method='GET', url='http://engineeringthesis_prediction_server_1:5000/update_ready')
 
         print("LOG: updating model DONE")
 

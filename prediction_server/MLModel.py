@@ -1,6 +1,6 @@
 import tasks
 from redis_client import set_model_version
-from SGDClassifier import model_SGDClassifier
+from SGDClassifier import ModelSGDClassifier
 
 class MLModel:
 
@@ -9,7 +9,7 @@ class MLModel:
         self.name = 'Name - TODO'
         self.version = 1
         set_model_version(1)
-        self.model = model_SGDClassifier()
+        self.model = ModelSGDClassifier()
 
     def fit(self, data):
         print("Model is trained...")
