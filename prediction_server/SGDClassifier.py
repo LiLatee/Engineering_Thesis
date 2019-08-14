@@ -4,23 +4,25 @@ import pickle
 import os
 import json
 import collections
-import DatabaseSQLite
+import DatabaseSQLite, ModelInfo
+
 
 from typing import List, Dict, NoReturn, Union, Any, Optional, Tuple
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler, normalize
 
-JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
+# JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
+JSONType = Union[str, bytes, bytearray]
 RowAsDictType = Dict[str, Union[str, float, int]]
 
 class ModelSGDClassifier:
 
     def __init__(self) -> None:
-        self.model = None
-        self.sc = None
-        self.df_original = None
-        self.last_sample_id = None
+        self.model: SGDClassifier = None
+        self.sc: StandardScaler = None
+        self.df_original: pd.DataFrame = None
+        self.last_sample_id: Optional[int] = None
 
     @staticmethod
     def read_csv_data(filepath: str, rows: int) -> pd.DataFrame:
@@ -47,6 +49,22 @@ class ModelSGDClassifier:
         df = pd.concat([df_common_columns, df_only_one_hot_vectors_columns], axis=1, sort=True)
 
         return df
+
+    @staticmethod
+    def read_required_column_names() -> List[str]:
+        required_column_name_file = open('required_column_names_list.txt', 'r')
+        required_column_names_list = required_column_name_file.read().splitlines()
+        return required_column_names_list
+
+    @staticmethod
+    def remove_nones_in_dict(dictionary: RowAsDictType):
+        result = {}
+        for k, v in dictionary.items():
+            if v is None:
+                result[k] = 0 #TODO zmienić aby wszystko w dataframeach i slownikach bylo str
+            else:
+                result[k] = v
+        return result
 
     def transform_df_into_df_with_one_hot_vectors(self, df_to_transform: pd.DataFrame) -> pd.DataFrame:
         data_as_dict = json.loads(df_to_transform.T.to_json())
@@ -83,12 +101,10 @@ class ModelSGDClassifier:
             'time_delay_for_conversion']
         new_dict['click_timestamp'] = old_dict['click_timestamp']
         new_dict['nb_clicks_1week'] = old_dict['nb_clicks_1week']
-        # print("REMOVE")
-        # print(type(new_dict))
-        # print(type(new_dict['Sale']))
+
         return new_dict
 
-    def create_model_and_save(self, json_training_data: JSONType) -> NoReturn:
+    def create_model_and_save(self, json_training_data: JSONType) -> None:
         self.df_original = pd.read_json(json_training_data)
 
         x_test_std, x_train_std, y_test, y_train = self.create_train_and_test_sets()
@@ -103,17 +119,20 @@ class ModelSGDClassifier:
         lr = SGDClassifier(loss='log', verbose=0, n_jobs=-1, random_state=1, tol=1e-3, max_iter=1000)
         lr.fit(x_train_std, y_train)
 
+        print("LOG: creating model DONE")
+
         print(collections.Counter(y_test))
         y_pred = lr.predict(x_test_std)
         print(collections.Counter(y_pred))
 
+        print("LOG: testing model DONE")
         print('Nieprawidłowo sklasyfikowane próbki: %d' % (y_test != y_pred).sum())
         print('Dokładność: %.2f' % lr.score(x_test_std, y_test))
 
         self.model = lr
         self.save_model()
 
-    def create_train_and_test_sets(self) -> (Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]):
+    def create_train_and_test_sets(self) -> List[np.ndarray]:
         df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(self.df_original)
         X = df_one_hot_vectors.iloc[:, 3:].values
         y = df_one_hot_vectors.iloc[:, :1].values.ravel()  # tutaj powinny być chyba 3 kolumny
@@ -128,12 +147,10 @@ class ModelSGDClassifier:
         x_train_std = normalize(x_train_std, norm='l2')
         x_test_std = self.sc.transform(x_test)
         x_test_std = normalize(x_test_std, norm='l2')
-        # print('REMOVE2')
-        # print(type(x_test_std))
-        # print(type(x_test_std[0]))
-        return x_test_std, x_train_std, y_test, y_train
 
-    def update_model(self) -> NoReturn:
+        return [x_test_std, x_train_std, y_test, y_train]
+
+    def update_model(self) -> None:
         db = DatabaseSQLite.DatabaseSQLite()
         df_samples_to_update = db.get_samples_to_update_model()
         df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(df_samples_to_update)
@@ -148,23 +165,7 @@ class ModelSGDClassifier:
         self.save_model()
         print("LOG: updating model DONE")
 
-    @staticmethod
-    def read_required_column_names() -> List[str]:
-        required_column_name_file = open('required_column_names_list.txt', 'r')
-        required_column_names_list = required_column_name_file.read().splitlines()
-        return required_column_names_list
-
-    @staticmethod
-    def remove_nones_in_dict(dictionary: RowAsDictType):
-        result = {}
-        for k, v in dictionary.items():
-            if v is None:
-                result[k] = 0 #TODO zmienić aby wszystko w dataframeach i slownikach bylo str
-            else:
-                result[k] = v
-        return result
-
-    def transform_one_row_in_one_hot_vectors_row(self, row_as_json: JSONType) -> List[RowAsDictType]:
+    def transform_one_row_in_one_hot_vectors_row(self, row_as_json: JSONType) -> List[Union[str, int, float]]:
         required_column_names_list = self.read_required_column_names()
 
         row_as_dict = json.loads(row_as_json)
@@ -185,7 +186,7 @@ class ModelSGDClassifier:
 
         return list(transformed_row_as_dict.values())
 
-    def predict(self, x: JSONType) -> Tuple[List[Union[int, float]]]:
+    def predict(self, x: JSONType) -> Tuple[np.ndarray, np.ndarray]:
         transformed_x = self.transform_one_row_in_one_hot_vectors_row(x)
         transformed_x = transformed_x[3:]  # remove sales features from sample
         transformed_x = self.sc.transform([transformed_x])
@@ -197,17 +198,11 @@ class ModelSGDClassifier:
         db = DatabaseSQLite.DatabaseSQLite()
         db.add_row_from_json(sample_json=x)
 
-        print('REMOVE')
-        print((type(y)))
-        print((type(probability[0])))
-        print((type(probability[0][0])))
-
         return y, probability
 
-    def save_model(self) -> NoReturn:
+    def save_model(self) -> None:
         if self.model is None:
-            print("LOG: " + "model is not created")
-            return
+            print("LOG: " + "There is not model available. Must be created.")
         # zapisywanie modelu do pliku
         # current_dir = os.path.dirname(__file__)
         # dest = os.path.join('pickle_objects')
@@ -220,16 +215,22 @@ class ModelSGDClassifier:
         model_binary = pickle.dumps(self.model)
         standard_scaler_binary = pickle.dumps(self.sc)
         last_sample_id = db.get_last_sample_id()
-        db.add_model("SGDClassifier", 0, last_sample_id, model_binary, standard_scaler_binary)
 
-    def load_model(self) -> NoReturn:
+        model_info = ModelInfo(None, "SGDClassifier", 0, last_sample_id, model_binary, standard_scaler_binary)
+        db.add_model(model_info)
+        print("LOG: saving model DONE")
+
+    def load_model(self) -> None:
         # current_dir = os.path.dirname(__file__)
         # self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
         # print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
         db = DatabaseSQLite.DatabaseSQLite()
-        self.model, self.sc, _ = db.get_last_model()
+        model_info = db.get_last_model_info()
+        self.model = model_info.binary_model
+        self.sc = model_info.binary_standard_scaler
+        print("LOG: " + "Model loaded.")
 
-    def test(self, n_samples_for_training: int, n_samples_for_testing: int) -> NoReturn:
+    def test(self, n_samples_for_training: int, n_samples_for_testing: int) -> None:
         n_samples_toread_from_csv = n_samples_for_training + n_samples_for_testing + 1
         headers = ['Sale', 'SalesAmountInEuro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
                    'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',

@@ -2,17 +2,20 @@ import pandas as pd
 import sqlite3
 import json
 import pickle
+import ModelInfo
 
 from sqlite3 import Error
+from typing import Union, Dict, Any, List
 
+# JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
+JSONType = Union[str, bytes, bytearray]
 
 #TODO: id modelu przy wyszukiwaniu zmienić ze stałej
 class DatabaseSQLite:
     def __init__(self):
         self.create_tables()
 
-    def __create_connection(self, db_file):
-        """ create a database connection to a SQLite database """
+    def __create_connection(self, db_file: str) -> sqlite3.Connection:
         try:
             conn = sqlite3.connect(db_file)
             return conn
@@ -20,7 +23,7 @@ class DatabaseSQLite:
             print(e)
         return None
 
-    def create_tables(self):
+    def create_tables(self) -> None:
         sql_create_samples_table = """ CREATE TABLE IF NOT EXISTS samples (
                                             id INTEGER PRIMARY KEY,
                                             Sale TEXT,
@@ -68,7 +71,7 @@ class DatabaseSQLite:
         conn.commit()
         conn.close()
 
-    def add_row_from_json(self, sample_json: json):
+    def add_row_from_json(self, sample_json: JSONType) -> None:
         sql = ''' INSERT INTO samples(  Sale,
                                         SalesAmountInEuro,
                                         time_delay_for_conversion,
@@ -105,24 +108,26 @@ class DatabaseSQLite:
         conn.close()
         return cur.lastrowid
     
-    def add_model(self, name, version, last_sample_id, binary_model, binary_standard_scaler):
+    def add_model(self, model_info: ModelInfo) -> None:
         sql_query = """ INSERT INTO model_history (name, version, last_sample_id, model, standard_scaler) VALUES (?,?,?,?,?)"""
         conn = self.__create_connection('sqlite3.db')
         cur = conn.cursor()
-        cur.execute(sql_query, (name, version, last_sample_id, sqlite3.Binary(binary_model), sqlite3.Binary(binary_standard_scaler)))
+        cur.execute(sql_query, (model_info.name, model_info.version, model_info.last_sample_id, sqlite3.Binary(model_info.binary_model), sqlite3.Binary(model_info.binary_standard_scaler)))
         conn.commit()
         conn.close()
 
-    def get_last_model(self):
-        sql_query = """ SELECT model, standard_scaler, last_sample_id FROM model_history
+    def get_last_model_info(self) -> ModelInfo:
+        sql_query = """ SELECT * FROM model_history
                         WHERE id = (SELECT max(id) FROM model_history)"""
         conn = self.__create_connection('sqlite3.db')
         result = conn.execute(sql_query).fetchone()
-        model = pickle.loads(result[0])
-        standard_scaler = pickle.loads(result[1])
-        last_sample_id = result[2]
+        model_info = ModelInfo.ModelInfo(result[0], result[1], result[2], result[3], result[4], pickle.loads(result[5]), pickle.loads(result[6]))
 
-        return model, standard_scaler, last_sample_id
+        # model = pickle.loads(result[0])
+        # standard_scaler = pickle.loads(result[1])
+        # last_sample_id = result[2]
+
+        return model_info
 
     def get_last_sample_id(self) -> int:
         conn = self.__create_connection('sqlite3.db')
@@ -134,7 +139,7 @@ class DatabaseSQLite:
 
     def get_samples_to_update_model(self) -> pd.DataFrame:
         conn = self.__create_connection('sqlite3.db')
-        _ , _ , last_sample_id = self.get_last_model()
+        last_sample_id = self.get_last_model_info().last_sample_id()
         df = pd.read_sql_query('SELECT * FROM samples WHERE id >' + str(last_sample_id), conn)
         return df
 
