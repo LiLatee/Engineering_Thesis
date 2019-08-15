@@ -5,7 +5,7 @@ import os
 import json
 import collections
 
-import DatabaseSQLite
+# from db_utils.SQLite_client import DatabaseSQLite as db
 
 from typing import List, Dict, NoReturn, Union, Any, Optional, Tuple
 from sklearn.model_selection import train_test_split
@@ -147,22 +147,23 @@ class ModelSGDClassifier:
 
 
     def task_update_model(self):
-        db = DatabaseSQLite.DatabaseSQLite()
-        df_samples_to_update = db.get_samples_to_update_model()
-        df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(df_samples_to_update)
+        # db = SQLite_client.DatabaseSQLite()
+        # df_samples_to_update = db.get_samples_to_update_model()
+        # df_one_hot_vectors = self.transform_df_into_df_with_one_hot_vectors(df_samples_to_update)
 
-        x = df_one_hot_vectors.iloc[:, 3:].values
-        y = df_one_hot_vectors['Sale'].values.ravel()
-        print(df_one_hot_vectors)
-        x = self.sc.transform(x)
-        x = normalize(x, norm='l2')
-        y = np.array([int(i) for i in y])
-
-        self.model.partial_fit(x, y, classes=np.array([0, 1]))
-        self.save_model()
-        requests.request(method='GET', url='http://engineeringthesis_prediction_server_1:5000/update_ready')
-
-        print("LOG: updating model DONE")
+        # x = df_one_hot_vectors.iloc[:, 3:].values
+        # y = df_one_hot_vectors['Sale'].values.ravel()
+        # print(df_one_hot_vectors)
+        # x = self.sc.transform(x)
+        # x = normalize(x, norm='l2')
+        # y = np.array([int(i) for i in y])
+        #
+        # self.model.partial_fit(x, y, classes=np.array([0, 1]))
+        # self.save_model()
+        # requests.request(method='GET', url='http://engineeringthesis_prediction_server_1:5000/update_ready')
+        #
+        # print("LOG: updating model DONE")
+        pass
 
     @staticmethod
     def read_required_column_names() -> List[str]:
@@ -210,8 +211,8 @@ class ModelSGDClassifier:
         probability = self.model.predict_proba(transformed_x)
         y = self.model.predict(transformed_x)
 
-        db = DatabaseSQLite.DatabaseSQLite()
-        db.add_row_from_json(sample_json=x)
+        # db = SQLite_client.DatabaseSQLite()
+        # db.add_row_from_json(sample_json=x)
 
         print('REMOVE')
         print((type(y)))
@@ -232,18 +233,19 @@ class ModelSGDClassifier:
         # pickle.dump(self.model, open(os.path.join(dest, "SGDClassifier.pkl"), mode='wb'), protocol=4)
         # print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
 
-        db = DatabaseSQLite.DatabaseSQLite()
+        # db = SQLite_client.DatabaseSQLite()
         model_binary = pickle.dumps(self.model)
         standard_scaler_binary = pickle.dumps(self.sc)
-        last_sample_id = db.get_last_sample_id()
-        db.add_model("SGDClassifier", 0, last_sample_id, model_binary, standard_scaler_binary)
+        # last_sample_id = db.get_last_sample_id()
+        # db.add_model("SGDClassifier", 0, last_sample_id, model_binary, standard_scaler_binary)
 
     def load_model(self) -> NoReturn:
         # current_dir = os.path.dirname(__file__)
         # self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
         # print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
-        db = DatabaseSQLite.DatabaseSQLite()
-        self.model, self.sc, _ = db.get_last_model()
+        # db = SQLite_client.DatabaseSQLite()
+        # self.model, self.sc, _ = db.get_last_model()
+        pass
 
     def test(self, n_samples_for_training: int, n_samples_for_testing: int) -> NoReturn:
         n_samples_toread_from_csv = n_samples_for_training + n_samples_for_testing + 1

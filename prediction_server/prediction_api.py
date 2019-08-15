@@ -1,6 +1,7 @@
 from flask import Flask, request
 import json
 from MLModel import MLModel
+from cass_client import CassClient
 
 app = Flask(__name__)
 model = MLModel()
@@ -8,7 +9,8 @@ model = MLModel()
 
 @app.route('/')
 def hello_world():
-    return 'Hello, World!'
+    return CassClient.cass_test()
+    # return 'Hello, World!'
 
 
 @app.route('/fit', methods=['POST'])

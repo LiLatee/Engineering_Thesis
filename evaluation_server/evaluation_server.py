@@ -3,7 +3,7 @@ import websockets
 import json
 import random
 import time
-
+# from db_utils.SQLite_client import DatabaseSQLite as db
 
 async def wait_for_start(websocket, path):
     async for message in websocket:
@@ -12,15 +12,23 @@ async def wait_for_start(websocket, path):
 
 
 async def send_current_evaluation_metrics(websocket, path):
+    processed_samples = 100
+    last_id = 0
     while True:
+        processed_samples += 100
+        # try:
+        #     last_id = db.get_last_sample_id()
+        # except:
+        #     last_id = 0
         message = {
-            'processed_samples': 500,
-            'correct_predictions': random.randint(400, 500),
-
+            'last_sample_id': last_id,
+            'processed_samples': processed_samples,
+            'correct_predictions': random.randint(processed_samples*0.8, processed_samples),
         }
         await websocket.send(json.dumps(message))
 
         time.sleep(1)
+        last_id = db.get_last_sample_id()
 
 
 if __name__ == "__main__":
