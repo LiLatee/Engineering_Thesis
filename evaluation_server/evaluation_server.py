@@ -28,7 +28,7 @@ async def send_current_evaluation_metrics(websocket, path):
         await websocket.send(json.dumps(message))
 
         time.sleep(1)
-        last_id = db.get_last_sample_id()
+        # last_id = db.get_last_sample_id()
 
 
 if __name__ == "__main__":

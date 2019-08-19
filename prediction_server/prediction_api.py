@@ -1,15 +1,15 @@
 from flask import Flask, request
 import json
 from MLModel import MLModel
-from cass_client import CassClient
+from cass_client import create_tables, get_data
+import json
 
 app = Flask(__name__)
 model = MLModel()
 
-
 @app.route('/')
 def hello_world():
-    return CassClient.cass_test()
+    return str(get_data())
     # return 'Hello, World!'
 
 
