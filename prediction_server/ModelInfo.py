@@ -1,5 +1,6 @@
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 class ModelInfo:
     id: int = None
@@ -7,17 +8,20 @@ class ModelInfo:
     version: int = None
     date_of_create: str = None
     last_sample_id: int = None
-    binary_model: SGDClassifier = None
-    binary_standard_scaler: StandardScaler = None
+    model: SGDClassifier = None
+    sc: StandardScaler = None
+    pca: PCA = None
 
-    def __init__(self, id: int, name: str, version: int, date_of_create: str, last_sample_id: int,  binary_model: SGDClassifier, binary_standard_scaler: StandardScaler):
+    def __init__(self, id: int, name: str, version: int, date_of_create: str, last_sample_id: int,  model: SGDClassifier, standard_scaler: StandardScaler, pca: PCA):
         self.id: int = id
         self.name: str = name
         self.version: int = version
         self.date_of_create: str = date_of_create
         self.last_sample_id: int = last_sample_id
-        self.binary_model:  SGDClassifier = binary_model
-        self.binary_standard_scaler: StandardScaler = binary_standard_scaler
+        self.model:  SGDClassifier = model
+        self.sc: StandardScaler = standard_scaler
+        self.pca: PCA = pca
+
 
 
 
