@@ -4,15 +4,26 @@
 
 
 from cassandra.cluster import Cluster
-from cassandra.query import dict_factory
-import json
-import time
-import logging
+from cassandra import util
 from typing import List, Dict, NoReturn, Union, Any, Optional, Tuple
+from cqlengine import columns
+from cqlengine.models import Model
+from cqlengine.connection import setup
 
 KEYSPACE = 'keyspace_name'
 SAMPLES_TABLE = 'samples'
 MODEL_HISTORY_TABLE = 'model_history'
+
+
+class ModelHistory(Model):
+    id = columns.Integer(primary_key=True)
+    name = columns.Text()
+    version = columns.Integer()
+    creation_timestamp = columns.Text()
+    last_sample_id = columns.Integer()
+    model = columns.Bytes()
+    standard_scaler = columns.Bytes()
+
 
 def get_session():
     cluster = Cluster(['engineeringthesis_cassandra_1'], port=9042)
@@ -58,16 +69,16 @@ def create_tables():
         PRIMARY KEY(id)
         ); """
     sql_create_model_history_table = """ CREATE TABLE IF NOT EXISTS """ + KEYSPACE + """.""" + MODEL_HISTORY_TABLE + """ (
-    id INT,
-    name TEXT,
-    version INT,
-    timestamp TIMESTAMP,
-    last_sample_id INT,
-    model BLOB,
-    standard_scaler BLOB,
-    PRIMARY KEY(id)
-    );
-    """
+        id INT,
+        name TEXT,
+        version INT,
+        creation_timestamp TIMESTAMP,
+        last_sample_id INT,
+        model BLOB,
+        standard_scaler BLOB,
+        PRIMARY KEY(id)
+        );
+        """
 
     session = get_session()
     session.execute(sql_create_samples_table)
@@ -77,22 +88,32 @@ def create_tables():
 
 def insert_model_history(model_history: dict) -> NoReturn:
     session = get_session()
-    stmt = session.prepare(""" INSERT INTO """ + KEYSPACE + """.""" + MODEL_HISTORY_TABLE + """("id", "name", "version", "timestamp", "last_sample_id", "model", "standard_scaler")
-        VALUES (?, ?, ?, ?, ?, ?, ?)""")
-    session.execute(stmt, [int(model_history.get("id")),
-        str(model_history.get("name")),
-        int(model_history.get("version")),
-        model_history.get("timestamp"),
-        int(model_history.get("last_sample_id")),
-        model_history.get("model"),
-        model_history.get("standard_scaler")])
+    model_history_obj = ModelHistory(
+        id=int(model_history.get("id")),
+        name=str(model_history.get("name")),
+        version=int(model_history.get("version")),
+        creation_timestamp=str(util.datetime_from_timestamp(model_history.get("timestamp"))),
+        last_sample_id=int(model_history.get("last_sample_id")),
+        model=model_history.get("model"),
+        standard_scaler=model_history.get("standard_scaler"))
+    model_history_obj.save()
+    # stmt = session.prepare(""" INSERT INTO """ + KEYSPACE + """.""" + MODEL_HISTORY_TABLE + """("id", "name", "version", "timestamp", "last_sample_id", "model", "standard_scaler")
+    #     VALUES (?, ?, ?, ?, ?, ?, ?)""")
+    # session.execute(stmt, [int(model_history.get("id")),
+    #     str(model_history.get("name")),
+    #     int(model_history.get("version")),
+    #     model_history.get("timestamp"),
+    #     int(model_history.get("last_sample_id")),
+    #     model_history.get("model"),
+    #     model_history.get("standard_scaler")])
 
 
 def insert_sample(sample: dict) -> NoReturn:
     session = get_session()
     stmt = session.prepare(""" INSERT INTO """ + KEYSPACE + """.""" + SAMPLES_TABLE + """(
-            "Sale",
-            "SalesAmountInEuro",
+            "id",
+            "sale",
+            "salesamountineuro",
             "time_delay_for_conversion",
             "click_timestamp",
             "nb_clicks_1week",
@@ -114,11 +135,14 @@ def insert_sample(sample: dict) -> NoReturn:
             "product_title",
             "partner_id",
             "user_id" )
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""")
+            VALUES (?, ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""")
 
     # sample_array = sample.values()
+    print(sample)
+    print(sample.get("Sale"))
     session.execute(stmt,
-        [sample.get("Sale"),
+        [sample.get("id"),
+        sample.get("Sale"),
         sample.get("SalesAmountInEuro"),
         sample.get("time_delay_for_conversion"),
         sample.get("click_timestamp"),
@@ -146,13 +170,15 @@ def get_data():
     model_history = {
         "id": 1,
         "name": "new model",
-        "version": 2,
-        "timestamp": time.time(),
+        "version": 21,
+        "timestamp":  1598891820,
+        # "timestamp":  '2016-04-06 13:06:11.534',
         "last_sample_id": 583,
         "model": bytes('None', 'utf-8'),
         "standard_scaler": bytes('None', 'utf-8')
     }
     sample = {
+        "id": 1,
         "Sale": "1",
         "SalesAmountInEuro": "1",
         "time_delay_for_conversion": "2121",
@@ -178,10 +204,20 @@ def get_data():
         "user_id": "35"
     }
 
+    setup(hosts=['engineeringthesis_cassandra_1'], default_keyspace=KEYSPACE)
     session = get_session()
+    session.execute('DROP KEYSPACE IF EXISTS ' + KEYSPACE)
     create_keyspace(session)
     create_tables()
+    insert_model_history(model_history)
     insert_sample(sample)
-    # insert_model_history(model_history)
     return session.execute("SELECT * FROM system_schema.keyspaces;")
     # return session.execute("SELECT * FROM " + KEYSPACE + "." + MODEL_HISTORY_TABLE + ";")
+
+
+def get_model_history_all():
+    # session = get_session()
+    # resultSet = session.execute("SELECT * FROM " + KEYSPACE + "." + MODEL_HISTORY_TABLE)
+    setup(hosts=['engineeringthesis_cassandra_1'], default_keyspace=KEYSPACE)
+    result_set = ModelHistory.objects.all()
+    return [dict(row) for row in result_set]
