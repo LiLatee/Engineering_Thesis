@@ -3,7 +3,7 @@ import sqlite3
 import json
 import pickle
 import ModelInfo
-
+import time
 from sqlite3 import Error
 from typing import Union, Dict, Any, List
 
@@ -103,10 +103,12 @@ class DatabaseSQLite:
         sample_array = sample_dict.values()
 
         conn = self.__create_connection('sqlite3.db')
+
         cur = conn.cursor()
         cur.execute(sql, tuple(sample_array))
         conn.commit()
         conn.close()
+
         return cur.lastrowid
 
     def add_model(self, model_info: ModelInfo) -> None:

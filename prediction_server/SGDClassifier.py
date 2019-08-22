@@ -30,6 +30,7 @@ class ModelSGDClassifier:
         # self.df_original: pd.DataFrame = None
         self.pca = None
         self.last_sample_id: Optional[int] = None
+        self.required_column_names_list: List[str] = self.read_required_column_names()
 
     def create_model_and_save(self, json_training_data: JSONType) -> None:
         # print("create_model_and_save")
@@ -75,35 +76,32 @@ class ModelSGDClassifier:
 
     def create_train_and_test_sets(self, df: pd.DataFrame) -> List[np.ndarray]:
         # print("create_train_and_test_sets")
-        start = time.time()
-        array_of_dicts_of_samples = self.transform_df_into_array_of_one_hot_vectors_dicts(df)
+        array_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df)
 
-        x = []
-        y = []
-        for s in array_of_dicts_of_samples:
-            x.append(list(s.values())[3:])
-            y.append(list(s.values())[:1][0])
+        # x = []
+        # y = []
+        # for s in array_of_dicts_of_samples:
+        #     x.append(list(s.values())[3:])
+        #     y.append(list(s.values())[:1][0])
 
-        # x = [list(s.values())[3:] for s in array_of_dicts_of_samples]
-        # y = [list(s.values())[:1][0] for s in array_of_dicts_of_samples]
-
+        x = [list(s.values())[3:] for s in array_of_dicts_of_samples]
+        y = [list(s.values())[:1][0] for s in array_of_dicts_of_samples]
         x = np.array(x)
         y = np.array(y)
-        end = time.time()
-        print('transform_df_into_df_with_one_hot_vectors: {0}'.format((end-start)))
 
         # x = df_one_hot_vectors.iloc[:, 3:].values
         # y = df_one_hot_vectors.iloc[:, :1].values.ravel()  # tutaj powinny być chyba 3 kolumny
 
         x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1, stratify=y)
 
-        # print('Liczba etykiet w zbiorze y:', np.bincount(y))
-        # print('Liczba etykiet w zbiorze y_train:', np.bincount(y_train))
-        # print('Liczba etykiet w zbiorze y_test:', np.bincount(y_test))
+        print('Liczba etykiet w zbiorze y:', np.bincount(y))
+        print('Liczba etykiet w zbiorze y_train:', np.bincount(y_train))
+        print('Liczba etykiet w zbiorze y_test:', np.bincount(y_test))
 
         self.pca = PCA(n_components=500, random_state=1)
         x_train = self.pca.fit_transform(x_train)
         x_test = self.pca.transform(x_test)
+
         adasyn = ADASYN(random_state=1)
         x_train, y_train = adasyn.fit_resample(x_train, y_train)
 
@@ -114,11 +112,9 @@ class ModelSGDClassifier:
         x_test_std = self.sc.transform(x_test)
         x_test_std = normalize(x_test_std, norm='l2')
 
-
-
         return [x_test_std, x_train_std, y_test, y_train]
 
-    def transform_df_into_array_of_one_hot_vectors_dicts(self, df_to_transform: pd.DataFrame) -> List:
+    def transform_df_into_list_of_one_hot_vectors_dicts(self, df_to_transform: pd.DataFrame) -> List:
         # print("transform_df_into_df_with_one_hot_vectors")
 
         data_as_dict = json.loads(df_to_transform.T.to_json())
@@ -126,7 +122,9 @@ class ModelSGDClassifier:
         samples = []
         for row_number, row_as_dict in data_as_dict.items():
             json_row = json.dumps(row_as_dict)
-            samples.append(self.transform_json_row_in_one_hot_vectors_dict(json_row)) #todo dużo czasu zajmuje
+            samples.append(self.transform_json_row_in_one_hot_vectors_dict(json_row))
+
+
 
         # df = pd.DataFrame(samples)
         # df = df.fillna(0)
@@ -145,9 +143,7 @@ class ModelSGDClassifier:
     def create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns(self, old_dict: RowAsDictType) -> RowAsDictType:
         # print('create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns')
 
-        required_column_names_list = self.read_required_column_names()
-
-        new_dict = dict.fromkeys(required_column_names_list)
+        new_dict = dict.fromkeys(self.required_column_names_list, 0)
         new_dict['Sale'] = old_dict['Sale']
         new_dict['SalesAmountInEuro'] = old_dict['SalesAmountInEuro']
         new_dict['time_delay_for_conversion'] = old_dict[
@@ -160,16 +156,11 @@ class ModelSGDClassifier:
     def set_values_to_one_hot_vectors_columns(self, old_dict: RowAsDictType, new_dict: RowAsDictType) -> RowAsDictType:
         # print('set_values_to_one_hot_vectors_columns')
 
-        required_column_names_list = self.read_required_column_names()
         for column_number, (column_name, cell_value) in enumerate(old_dict.items()):
             if column_number > 2:
                 transformed_column_name = column_name + '_' + str(cell_value)
-                if transformed_column_name in required_column_names_list:
+                if transformed_column_name in self.required_column_names_list:
                     new_dict[transformed_column_name] = 1
-
-
-
-        new_dict = self.replace_none_values_in_dict(dict_to_change=new_dict, value_for_none=0)
 
         return new_dict
 
@@ -191,7 +182,9 @@ class ModelSGDClassifier:
 
     def predict(self, x: JSONType) -> Tuple[np.ndarray, np.ndarray]:
         start = time.time()
+
         transformed_x = list(self.transform_json_row_in_one_hot_vectors_dict(x).values())
+
         transformed_x = transformed_x[3:]  # remove sales features from sample
         transformed_x = self.pca.transform([transformed_x])
         transformed_x = self.sc.transform(transformed_x)
@@ -199,18 +192,20 @@ class ModelSGDClassifier:
 
         probability = self.model.predict_proba(transformed_x)
         y = self.model.predict(transformed_x)
+        end3 = time.time() - start
 
         db = DatabaseSQLite.DatabaseSQLite()
-        db.add_row_from_json(sample_json=x)
 
-        end = time.time()
-        print('predict: {0}'.format((end-start)))
-        return y, probability
+        start = time.time()
+        db.add_row_from_json(sample_json=x)
+        end4 = time.time() - start
+
+        return y, probability, 1,1,end3, end4
 
     def update_model(self) -> None:
         db = DatabaseSQLite.DatabaseSQLite()
         df_samples_to_update = db.get_samples_to_update_model()
-        df_one_hot_vectors = self.transform_df_into_array_of_one_hot_vectors_dicts(df_samples_to_update)
+        df_one_hot_vectors = self.transform_df_into_list_of_one_hot_vectors_dicts(df_samples_to_update)
         # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
 
         x = df_one_hot_vectors.iloc[:, 3:].values
@@ -268,10 +263,25 @@ class ModelSGDClassifier:
         y_test = np.array([])
 
         # start = time.time()
+        s1 = []
+        s2 = []
+        s3 = []
+        s4 = []
+
         for id, row in df.iterrows():
-            y, prob = self.predict(row.to_json())
+            y, prob, e1,e2,e3,e4 = self.predict(row.to_json())
+            s1.append(e1)
+            s2.append(e2)
+            s3.append(e3)
+            s4.append(e4)
             y_test = np.append(y_test, row['Sale'])
             y_pred = np.append(y_pred, y)
+
+        print(sum(s1))
+        print(sum(s2))
+        print(sum(s3))
+        print(sum(s4))
+
         # end = time.time()
         # print('testing: {0}'.format((end-start)))
         # print(collections.Counter(y_test))
@@ -298,7 +308,10 @@ class ModelSGDClassifier:
         training_data_json = df.to_json()
 
         print("Training...")
+        start = time.time()
         self.create_model_and_save(training_data_json)
+        end = time.time()
+        print('CALOSC TRENIG: {0}'.format((end-start)))
         print("DONE")
 
 
@@ -317,7 +330,9 @@ class ModelSGDClassifier:
 
 if __name__ == '__main__':
     m = ModelSGDClassifier()
+
     # m.load_model()
     # m.update_model()
-    m.test_train(n_samples_for_training=10000)
-    # m.test_predict_1k()
+    # m.test_train(n_samples_for_training=10000)
+    m.load_model()
+    m.test_predict_1k()
