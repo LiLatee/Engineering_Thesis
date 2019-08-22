@@ -2,16 +2,15 @@
 # 1. docker exec -it <container_with_cassandra> bash
 # 2. cqlsh
 
-
 from cassandra.cluster import Cluster
 from cassandra import util
-from typing import List, Dict, NoReturn, Union, Any, Optional, Tuple
+from typing import NoReturn
 from cqlengine import columns
 from cqlengine.models import Model
 from cqlengine.connection import setup
 
 KEYSPACE = 'keyspace_name'
-SAMPLES_TABLE = 'samples'
+SAMPLE_TABLE = 'sample'
 MODEL_HISTORY_TABLE = 'model_history'
 
 
@@ -25,9 +24,39 @@ class ModelHistory(Model):
     standard_scaler = columns.Bytes()
 
 
+class Sample(Model):
+    id = columns.Integer(primary_key=True)
+    sale = columns.Text()
+    sales_amount_in_euro = columns.Text()
+    time_delay_for_conversion = columns.Text()
+    click_timestamp = columns.Text()
+    nb_clicks_1week = columns.Text()
+    product_price = columns.Text()
+    product_age_group = columns.Text()
+    device_type = columns.Text()
+    audience_id = columns.Text()
+    product_gender = columns.Text()
+    product_brand = columns.Text()
+    product_category_1 = columns.Text()
+    product_category_2 = columns.Text()
+    product_category_3 = columns.Text()
+    product_category_4 = columns.Text()
+    product_category_5 = columns.Text()
+    product_category_6 = columns.Text()
+    product_category_7 = columns.Text()
+    product_country = columns.Text()
+    product_id = columns.Text()
+    product_title = columns.Text()
+    partner_id = columns.Text()
+    user_id = columns.Text()
+
+
+def setup_cassandra():
+    setup(hosts=['engineeringthesis_cassandra_1'], default_keyspace=KEYSPACE)
+
+
 def get_session():
     cluster = Cluster(['engineeringthesis_cassandra_1'], port=9042)
-    # cluster = Cluster(['0.0.0.0'], port=9042)
     session = cluster.connect()
     create_keyspace(session)
     session.set_keyspace(KEYSPACE)
@@ -40,8 +69,9 @@ def create_keyspace(session):
     WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' }
     """)
 
+
 def create_tables():
-    sql_create_samples_table = """ CREATE TABLE IF NOT EXISTS """ + KEYSPACE + """.""" + SAMPLES_TABLE + """ (
+    sql_create_samples_table = """ CREATE TABLE IF NOT EXISTS """ + KEYSPACE + """.""" + SAMPLE_TABLE + """ (
         id INT,
         Sale TEXT,
         SalesAmountInEuro TEXT,
@@ -87,7 +117,6 @@ def create_tables():
 
 
 def insert_model_history(model_history: dict) -> NoReturn:
-    session = get_session()
     model_history_obj = ModelHistory(
         id=int(model_history.get("id")),
         name=str(model_history.get("name")),
@@ -97,76 +126,39 @@ def insert_model_history(model_history: dict) -> NoReturn:
         model=model_history.get("model"),
         standard_scaler=model_history.get("standard_scaler"))
     model_history_obj.save()
-    # stmt = session.prepare(""" INSERT INTO """ + KEYSPACE + """.""" + MODEL_HISTORY_TABLE + """("id", "name", "version", "timestamp", "last_sample_id", "model", "standard_scaler")
-    #     VALUES (?, ?, ?, ?, ?, ?, ?)""")
-    # session.execute(stmt, [int(model_history.get("id")),
-    #     str(model_history.get("name")),
-    #     int(model_history.get("version")),
-    #     model_history.get("timestamp"),
-    #     int(model_history.get("last_sample_id")),
-    #     model_history.get("model"),
-    #     model_history.get("standard_scaler")])
 
 
 def insert_sample(sample: dict) -> NoReturn:
-    session = get_session()
-    stmt = session.prepare(""" INSERT INTO """ + KEYSPACE + """.""" + SAMPLES_TABLE + """(
-            "id",
-            "sale",
-            "salesamountineuro",
-            "time_delay_for_conversion",
-            "click_timestamp",
-            "nb_clicks_1week",
-            "product_price",
-            "product_age_group",
-            "device_type",
-            "audience_id",
-            "product_gender",
-            "product_brand",
-            "product_category_1",
-            "product_category_2",
-            "product_category_3",
-            "product_category_4",
-            "product_category_5",
-            "product_category_6",
-            "product_category_7",
-            "product_country",
-            "product_id",
-            "product_title",
-            "partner_id",
-            "user_id" )
-            VALUES (?, ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""")
+    sample_obj = Sample(
+        id=sample.get("id"),
+        sale=sample.get("Sale"),
+        salesamountineuro=sample.get("SalesAmountInEuro"),
+        time_delay_for_conversion=sample.get("time_delay_for_conversion"),
+        click_timestamp=sample.get("click_timestamp"),
+        nb_clicks_1week=sample.get("nb_clicks_1week"),
+        product_price=sample.get("product_price"),
+        product_age_group=sample.get("product_age_group"),
+        device_type=sample.get("device_type"),
+        audience_id=sample.get("audience_id"),
+        product_gender=sample.get("product_gender"),
+        product_brand=sample.get("product_brand"),
+        product_category_1=sample.get("product_category_1"),
+        product_category_2=sample.get("product_category_2"),
+        product_category_3=sample.get("product_category_3"),
+        product_category_4=sample.get("product_category_4"),
+        product_category_5=sample.get("product_category_5"),
+        product_category_6=sample.get("product_category_6"),
+        product_category_7=sample.get("product_category_7"),
+        product_country=sample.get("product_country"),
+        product_id=sample.get("product_id"),
+        product_title=sample.get("product_title"),
+        partner_id=sample.get("partner_id"),
+        user_id=sample.get("user_id")
+    )
+    sample_obj.save()
 
-    # sample_array = sample.values()
-    print(sample)
-    print(sample.get("Sale"))
-    session.execute(stmt,
-        [sample.get("id"),
-        sample.get("Sale"),
-        sample.get("SalesAmountInEuro"),
-        sample.get("time_delay_for_conversion"),
-        sample.get("click_timestamp"),
-        sample.get("nb_clicks_1week"),
-        sample.get("product_price"),
-        sample.get("product_age_group"),
-        sample.get("device_type"),
-        sample.get("audience_id"),
-        sample.get("product_gender"),
-        sample.get("product_brand"),
-        sample.get("product_category_1"),
-        sample.get("product_category_2"),
-        sample.get("product_category_3"),
-        sample.get("product_category_4"),
-        sample.get("product_category_5"),
-        sample.get("product_category_6"),
-        sample.get("product_category_7"),
-        sample.get("product_country"),
-        sample.get("product_id"),
-        sample.get("product_title"),
-        sample.get("partner_id"),
-        sample.get("user_id")])
 
-def get_data():
+def add_some_data():
     model_history = {
         "id": 1,
         "name": "new model",
@@ -178,7 +170,7 @@ def get_data():
         "standard_scaler": bytes('None', 'utf-8')
     }
     sample = {
-        "id": 1,
+        "id": 2,
         "Sale": "1",
         "SalesAmountInEuro": "1",
         "time_delay_for_conversion": "2121",
@@ -204,7 +196,7 @@ def get_data():
         "user_id": "35"
     }
 
-    setup(hosts=['engineeringthesis_cassandra_1'], default_keyspace=KEYSPACE)
+    setup_cassandra()
     session = get_session()
     session.execute('DROP KEYSPACE IF EXISTS ' + KEYSPACE)
     create_keyspace(session)
@@ -212,12 +204,13 @@ def get_data():
     insert_model_history(model_history)
     insert_sample(sample)
     return session.execute("SELECT * FROM system_schema.keyspaces;")
-    # return session.execute("SELECT * FROM " + KEYSPACE + "." + MODEL_HISTORY_TABLE + ";")
 
 
 def get_model_history_all():
-    # session = get_session()
-    # resultSet = session.execute("SELECT * FROM " + KEYSPACE + "." + MODEL_HISTORY_TABLE)
-    setup(hosts=['engineeringthesis_cassandra_1'], default_keyspace=KEYSPACE)
-    result_set = ModelHistory.objects.all()
-    return [dict(row) for row in result_set]
+    setup_cassandra()
+    return [dict(row) for row in ModelHistory.objects.all()]
+
+
+def get_sample_all():
+    setup_cassandra()
+    return [dict(row) for row in Sample.objects.all()]

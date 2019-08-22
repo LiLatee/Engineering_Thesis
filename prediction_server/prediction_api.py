@@ -1,7 +1,7 @@
 from flask import Flask, request
 import json
 from MLModel import MLModel
-from cass_client import create_tables, get_model_history_all, get_data
+from cass_client import create_tables, get_model_history_all, add_some_data, get_sample_all
 import json
 
 app = Flask(__name__)
@@ -15,8 +15,14 @@ def hello_world():
 
 @app.route('/data')
 def data():
-    return str(get_data())
-    # return 'Hello, World!'
+    add_some_data()
+    return 'Data added properly'
+
+
+@app.route('/sample')
+def sample():
+    return str(get_sample_all())
+
 
 @app.route('/fit', methods=['POST'])
 def fit():
