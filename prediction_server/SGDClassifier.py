@@ -5,7 +5,7 @@ import os
 import json
 import collections
 
-# from db_utils.SQLite_client import DatabaseSQLite as db
+import cass_client as db
 
 from typing import List, Dict, NoReturn, Union, Any, Optional, Tuple
 from sklearn.model_selection import train_test_split
@@ -213,6 +213,7 @@ class ModelSGDClassifier:
 
         # db = SQLite_client.DatabaseSQLite()
         # db.add_row_from_json(sample_json=x)
+        db.insert_sample(sample=json.loads(x))
 
         print('REMOVE')
         print((type(y)))

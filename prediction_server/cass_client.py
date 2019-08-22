@@ -12,6 +12,7 @@ from cqlengine.connection import setup
 KEYSPACE = 'keyspace_name'
 SAMPLE_TABLE = 'sample'
 MODEL_HISTORY_TABLE = 'model_history'
+LAST_SAMPLE_ID = 1
 
 
 class ModelHistory(Model):
@@ -117,6 +118,7 @@ def create_tables():
 
 
 def insert_model_history(model_history: dict) -> NoReturn:
+    setup_cassandra()
     model_history_obj = ModelHistory(
         id=int(model_history.get("id")),
         name=str(model_history.get("name")),
@@ -129,32 +131,35 @@ def insert_model_history(model_history: dict) -> NoReturn:
 
 
 def insert_sample(sample: dict) -> NoReturn:
+    setup_cassandra()
+    global LAST_SAMPLE_ID
     sample_obj = Sample(
-        id=sample.get("id"),
-        sale=sample.get("Sale"),
-        salesamountineuro=sample.get("SalesAmountInEuro"),
-        time_delay_for_conversion=sample.get("time_delay_for_conversion"),
-        click_timestamp=sample.get("click_timestamp"),
-        nb_clicks_1week=sample.get("nb_clicks_1week"),
-        product_price=sample.get("product_price"),
-        product_age_group=sample.get("product_age_group"),
-        device_type=sample.get("device_type"),
-        audience_id=sample.get("audience_id"),
-        product_gender=sample.get("product_gender"),
-        product_brand=sample.get("product_brand"),
-        product_category_1=sample.get("product_category_1"),
-        product_category_2=sample.get("product_category_2"),
-        product_category_3=sample.get("product_category_3"),
-        product_category_4=sample.get("product_category_4"),
-        product_category_5=sample.get("product_category_5"),
-        product_category_6=sample.get("product_category_6"),
-        product_category_7=sample.get("product_category_7"),
-        product_country=sample.get("product_country"),
-        product_id=sample.get("product_id"),
-        product_title=sample.get("product_title"),
-        partner_id=sample.get("partner_id"),
-        user_id=sample.get("user_id")
+        id=LAST_SAMPLE_ID,
+        sale=str(sample.get("Sale")),
+        salesamountineuro=str(sample.get("SalesAmountInEuro")),
+        time_delay_for_conversion=str(sample.get("time_delay_for_conversion")),
+        click_timestamp=str(sample.get("click_timestamp")),
+        nb_clicks_1week=str(sample.get("nb_clicks_1week")),
+        product_price=str(sample.get("product_price")),
+        product_age_group=str(sample.get("product_age_group")),
+        device_type=str(sample.get("device_type")),
+        audience_id=str(sample.get("audience_id")),
+        product_gender=str(sample.get("product_gender")),
+        product_brand=str(sample.get("product_brand")),
+        product_category_1=str(sample.get("product_category_1")),
+        product_category_2=str(sample.get("product_category_2")),
+        product_category_3=str(sample.get("product_category_3")),
+        product_category_4=str(sample.get("product_category_4")),
+        product_category_5=str(sample.get("product_category_5")),
+        product_category_6=str(sample.get("product_category_6")),
+        product_category_7=str(sample.get("product_category_7")),
+        product_country=str(sample.get("product_country")),
+        product_id=str(sample.get("product_id")),
+        product_title=str(sample.get("product_title")),
+        partner_id=str(sample.get("partner_id")),
+        user_id=str(sample.get("user_id"))
     )
+    LAST_SAMPLE_ID += 1
     sample_obj.save()
 
 

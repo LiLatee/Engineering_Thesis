@@ -1,2 +1,4 @@
 websockets==8.0.2
 pandas==0.25.0
+cassandra-driver==3.18
+cqlengine==0.21.0

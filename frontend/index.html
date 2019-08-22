@@ -44,9 +44,7 @@
             var model_version = document.getElementById("model-version");
             ws_client.onmessage = async function (event) {
                 var message = JSON.parse(event.data);
-<!--                console.log(message);-->
                 samples_counter = message["samples"];
-                samples.innerHTML = message["samples"];
                 model_name.innerHTML = message["model_name"];
                 model_version.innerHTML = message["model_version"];
             };
@@ -63,6 +61,9 @@
             var correct_prediction_ratio = message["correct_predictions"] / message["processed_samples"];
             Plotly.extendTraces('chart',{ y:[[correct_prediction_ratio]]}, [0]);
             cnt++;
+
+            var samples = document.getElementById("samples");
+            samples.innerHTML = message["processed_samples"];
 
             if(cnt > 500) {
                 Plotly.relayout('chart',{
