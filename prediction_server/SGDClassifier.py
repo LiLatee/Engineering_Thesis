@@ -36,7 +36,7 @@ class ModelSGDClassifier:
     def create_model_and_save(self, json_training_data: JSONType) -> None:
         # print("create_model_and_save")
 
-        df_original = pd.read_json(json_training_data)
+        df_original = pd.read_json(json_training_data) # TODO wywalic DATAFRAME
         # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
 
         start = time.time()
@@ -77,7 +77,7 @@ class ModelSGDClassifier:
 
     def create_train_and_test_sets(self, df: pd.DataFrame) -> List[np.ndarray]:
         # print("create_train_and_test_sets")
-        array_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df)
+        list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df)
 
         # x = []
         # y = []
@@ -85,8 +85,8 @@ class ModelSGDClassifier:
         #     x.append(list(s.values())[3:])
         #     y.append(list(s.values())[:1][0])
 
-        x = [list(s.values())[3:] for s in array_of_dicts_of_samples]
-        y = [list(s.values())[:1][0] for s in array_of_dicts_of_samples]
+        x = [list(s.values())[3:] for s in list_of_dicts_of_samples]
+        y = [list(s.values())[:1][0] for s in list_of_dicts_of_samples]
         x = np.array(x)
         y = np.array(y)
 
@@ -114,23 +114,6 @@ class ModelSGDClassifier:
         x_test_std = normalize(x_test_std, norm='l2')
 
         return [x_test_std, x_train_std, y_test, y_train]
-
-
-    def transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(self, samples_list_of_jsons) -> List:
-        # print("transform_df_into_df_with_one_hot_vectors")
-        # data_as_dict = json.loads(df_to_transform.T.to_json())
-
-        samples = []
-        for sample_as_json in samples_list_of_jsons:
-            samples.append(self.transform_json_row_in_one_hot_vectors_dict(sample_as_json))
-
-
-
-        # df = pd.DataFrame(samples)
-        # df = df.fillna(0)
-
-        return samples
-
 
     def transform_df_into_list_of_one_hot_vectors_dicts(self, df_to_transform: pd.DataFrame) -> List:
         # print("transform_df_into_df_with_one_hot_vectors")
@@ -206,18 +189,23 @@ class ModelSGDClassifier:
         transformed_sample_dict = self.sc.transform(transformed_sample_dict)
         transformed_sample_dict = normalize(transformed_sample_dict, norm='l2')
 
-        probability = self.model.predict_proba(transformed_sample_dict)
+        probability = self.model.predict_proba(transformed_sample_dict).ravel()
         y = self.model.predict(transformed_sample_dict)
 
-        start = time.time()
+
+        sample_dict = json.loads(sample_json)
+        sample_dict['predicted'] = str(y[0])
+        sample_dict['probabilities'] = list(probability)
+        sample_json = json.dumps(sample_dict)
+
+
         self.redis_DB.rpush_sample(sample_json)
-        end4 = time.time() - start
 
 
         # db = DatabaseSQLite.DatabaseSQLite()
         # db.add_row_from_json(sample_json=sample_json)
 
-        return y, probability, 1,1,1, end4
+        return y, probability
 
     def update_model(self) -> None:
         # db = DatabaseSQLite.DatabaseSQLite()
@@ -252,6 +240,21 @@ class ModelSGDClassifier:
         self.model.partial_fit(x, y, classes=np.array([0, 1]))
         self.save_model()
         print("LOG: updating model DONE")
+
+    def transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(self, samples_list_of_jsons) -> List:
+        # print("transform_df_into_df_with_one_hot_vectors")
+        # data_as_dict = json.loads(df_to_transform.T.to_json())
+
+        samples = []
+        for sample_as_json in samples_list_of_jsons:
+            samples.append(self.transform_json_row_in_one_hot_vectors_dict(sample_as_json))
+
+
+
+        # df = pd.DataFrame(samples)
+        # df = df.fillna(0)
+
+        return samples
 
     def save_model(self) -> None:
         if self.model is None:
@@ -293,25 +296,11 @@ class ModelSGDClassifier:
         y_pred = np.array([])
         y_test = np.array([])
 
-        # start = time.time()
-        s1 = []
-        s2 = []
-        s3 = []
-        s4 = []
-
         for id, row in df.iterrows():
-            y, prob, e1,e2,e3,e4 = self.predict(row.to_json())
-            s1.append(e1)
-            s2.append(e2)
-            s3.append(e3)
-            s4.append(e4)
+            y, prob = self.predict(row.to_json())
             y_test = np.append(y_test, row['Sale'])
             y_pred = np.append(y_pred, y)
 
-        print(sum(s1))
-        print(sum(s2))
-        print(sum(s3))
-        print(sum(s4))
 
         # end = time.time()
         # print('testing: {0}'.format((end-start)))
@@ -363,6 +352,6 @@ if __name__ == '__main__':
     m = ModelSGDClassifier()
     # m.test_train(n_samples_for_training=10000)
     m.load_model()
-    # m.test_predict_1k()
-    m.update_model()
+    m.test_predict_1k()
+    # m.update_model()
 
