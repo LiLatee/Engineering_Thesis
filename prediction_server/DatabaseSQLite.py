@@ -152,7 +152,7 @@ class DatabaseSQLite:
             return -1
         return result[0]
 
-    def get_samples_to_update_model(self) -> pd.DataFrame:
+    def get_samples_to_update_model_as_df(self) -> pd.DataFrame:
         conn = self.__create_connection('sqlite3.db')
         last_sample_id = self.get_last_model_info().last_sample_id
         df = pd.read_sql_query('SELECT * FROM samples WHERE id >' + str(last_sample_id), conn)
