@@ -1,7 +1,7 @@
 from flask import Flask, request
 import json
 from MLModel import MLModel
-from cass_client import create_tables, get_model_history_all, add_some_data, get_sample_all
+from cass_client import create_tables, get_model_history_all, restart_cassandra, get_sample_all
 import json
 
 app = Flask(__name__)
@@ -13,10 +13,10 @@ def hello_world():
     # return 'Hello, World!'
 
 
-@app.route('/data')
-def data():
-    add_some_data()
-    return 'Data added properly'
+@app.route('/restart')
+def restart():
+    restart_cassandra()
+    return 'Cassandra restarted'
 
 
 @app.route('/sample')

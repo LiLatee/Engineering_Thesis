@@ -6,7 +6,7 @@ import json
 import collections
 
 import cass_client as db
-import DatabaseSQLite
+# import DatabaseSQLite
 import ModelInfo
 import time
 
@@ -215,38 +215,39 @@ class ModelSGDClassifier:
         return y, probability
 
     def update_model(self) -> None:
-        # db = DatabaseSQLite.DatabaseSQLite()
-        # df_samples_to_update = db.get_samples_to_update_model_as_df()
-        # list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df_samples_to_update)
-
-        samples_list_of_bytes = self.redis_DB.get_all_samples_as_list_of_bytes()
-        list_of_dicts_of_samples = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(samples_list_of_bytes)
-
-        # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
-
-        # x = []
-        # y = []
-        # for s in array_of_dicts_of_samples:
-        #     x.append(list(s.values())[3:])
-        #     y.append(list(s.values())[:1][0])
-
-        x = [list(s.values())[3:] for s in list_of_dicts_of_samples]
-        y = [list(s.values())[:1][0] for s in list_of_dicts_of_samples]
-        x = np.array(x)
-        y = np.array(y)
-        # x = df_one_hot_vectors.iloc[:, 3:].values
-        # y = df_one_hot_vectors['Sale'].values.ravel()
-        print(x)
-        x = self.pca.transform(x)
-        adasyn = ADASYN(random_state=1)
-        x, y = adasyn.fit_resample(x, y) #TODO blad jak wszystkie probki sa z jedne klasy
-        x = self.sc.transform(x)
-        x = normalize(x, norm='l2')
-        y = np.array([int(i) for i in y])
-
-        self.model.partial_fit(x, y, classes=np.array([0, 1]))
-        self.save_model()
-        print("LOG: updating model DONE")
+        pass
+        # # db = DatabaseSQLite.DatabaseSQLite()
+        # # df_samples_to_update = db.get_samples_to_update_model_as_df()
+        # # list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df_samples_to_update)
+        #
+        # samples_list_of_bytes = self.redis_DB.get_all_samples_as_list_of_bytes()
+        # list_of_dicts_of_samples = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(samples_list_of_bytes)
+        #
+        # # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
+        #
+        # # x = []
+        # # y = []
+        # # for s in array_of_dicts_of_samples:
+        # #     x.append(list(s.values())[3:])
+        # #     y.append(list(s.values())[:1][0])
+        #
+        # x = [list(s.values())[3:] for s in list_of_dicts_of_samples]
+        # y = [list(s.values())[:1][0] for s in list_of_dicts_of_samples]
+        # x = np.array(x)
+        # y = np.array(y)
+        # # x = df_one_hot_vectors.iloc[:, 3:].values
+        # # y = df_one_hot_vectors['Sale'].values.ravel()
+        # print(x)
+        # x = self.pca.transform(x)
+        # adasyn = ADASYN(random_state=1)
+        # x, y = adasyn.fit_resample(x, y) #TODO blad jak wszystkie probki sa z jedne klasy
+        # x = self.sc.transform(x)
+        # x = normalize(x, norm='l2')
+        # y = np.array([int(i) for i in y])
+        #
+        # self.model.partial_fit(x, y, classes=np.array([0, 1]))
+        # self.save_model()
+        # print("LOG: updating model DONE")
 
     def transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(self, samples_list_of_jsons) -> List:
         # print("transform_df_into_df_with_one_hot_vectors")
@@ -264,33 +265,35 @@ class ModelSGDClassifier:
         return samples
 
     def save_model(self) -> None:
-        if self.model is None:
-            print("LOG: " + "There is not model available. Must be created.")
-        # zapisywanie modelu do pliku
-        # current_dir = os.path.dirname(__file__)
-        # dest = os.path.join('pickle_objects')
-        # if not os.path.exists(dest):
-        #     os.makedirs(dest)
-        # pickle.dump(self.model, open(os.path.join(dest, "SGDClassifier.pkl"), mode='wb'), protocol=4)
-        # print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
-
-        db = DatabaseSQLite.DatabaseSQLite()
-        last_sample_id = db.get_last_sample_id()
-        model_info = ModelInfo.ModelInfo(None, "SGDClassifier", 0, None, last_sample_id, self.model, self.sc, self.pca)
-        db.add_model(model_info)
-        print("LOG: saving model DONE")
+        pass
+        # if self.model is None:
+        #     print("LOG: " + "There is not model available. Must be created.")
+        # # zapisywanie modelu do pliku
+        # # current_dir = os.path.dirname(__file__)
+        # # dest = os.path.join('pickle_objects')
+        # # if not os.path.exists(dest):
+        # #     os.makedirs(dest)
+        # # pickle.dump(self.model, open(os.path.join(dest, "SGDClassifier.pkl"), mode='wb'), protocol=4)
+        # # print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
+        #
+        # db = DatabaseSQLite.DatabaseSQLite()
+        # last_sample_id = db.get_last_sample_id()
+        # model_info = ModelInfo.ModelInfo(None, "SGDClassifier", 0, None, last_sample_id, self.model, self.sc, self.pca)
+        # db.add_model(model_info)
+        # print("LOG: saving model DONE")
 
     def load_model(self) -> None:
-        # current_dir = os.path.dirname(__file__)
-        # self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
-        # print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
-        db = DatabaseSQLite.DatabaseSQLite()
-        model_info = db.get_last_model_info()
-        self.model = model_info.model
-        self.sc = model_info.sc
-        self.pca = model_info.pca
-
-        print("LOG: " + "Model loaded.")
+        pass
+        # # current_dir = os.path.dirname(__file__)
+        # # self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
+        # # print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
+        # db = DatabaseSQLite.DatabaseSQLite()
+        # model_info = db.get_last_model_info()
+        # self.model = model_info.model
+        # self.sc = model_info.sc
+        # self.pca = model_info.pca
+        #
+        # print("LOG: " + "Model loaded.")
 
     def test_predict_1k(self):
         print("Testing...")

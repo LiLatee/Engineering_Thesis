@@ -56,6 +56,14 @@ def setup_cassandra():
     setup(hosts=['engineeringthesis_cassandra_1'], default_keyspace=KEYSPACE)
 
 
+def restart_cassandra():
+    setup_cassandra()
+    session = get_session()
+    session.execute('DROP KEYSPACE IF EXISTS ' + KEYSPACE)
+    create_keyspace(session)
+    create_tables()
+    
+
 def get_session():
     cluster = Cluster(['engineeringthesis_cassandra_1'], port=9042)
     session = cluster.connect()
@@ -201,14 +209,8 @@ def add_some_data():
         "user_id": "35"
     }
 
-    setup_cassandra()
-    session = get_session()
-    session.execute('DROP KEYSPACE IF EXISTS ' + KEYSPACE)
-    create_keyspace(session)
-    create_tables()
     insert_model_history(model_history)
     insert_sample(sample)
-    return session.execute("SELECT * FROM system_schema.keyspaces;")
 
 
 def get_model_history_all():
