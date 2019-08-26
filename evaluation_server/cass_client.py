@@ -2,14 +2,12 @@
 # 1. docker exec -it <container_with_cassandra> bash
 # 2. cqlsh
 
-from cassandra.cluster import Cluster
+from cassandra.cluster import Cluster, Session
 from cassandra import util
-from typing import NoReturn
 from cqlengine import columns
 from cqlengine.models import Model
 from cqlengine.connection import setup
-import json
-
+from typing import List
 
 
 class ModelHistory(Model):
@@ -59,30 +57,30 @@ class CassandraClient:
         self.LAST_SAMPLE_ID = 1
         self.restart_cassandra()
 
-    def setup_cassandra(self):
+    def setup_cassandra(self) -> None:
         setup(hosts=['engineeringthesis_cassandra_1'], default_keyspace=self.KEYSPACE)
 
-    def restart_cassandra(self):
+    def restart_cassandra(self) -> None:
         self.setup_cassandra()
         session = self.get_session()
         session.execute('DROP KEYSPACE IF EXISTS ' + self.KEYSPACE)
         self.create_keyspace(session)
         self.create_tables()
 
-    def get_session(self):
+    def get_session(self) -> Session:
         cluster = Cluster(['engineeringthesis_cassandra_1'], port=9042)
         session = cluster.connect()
         self.create_keyspace(session)
         session.set_keyspace(self.KEYSPACE)
         return session
 
-    def create_keyspace(self, session):
+    def create_keyspace(self, session: Session) -> None:
         session.execute("""
         CREATE KEYSPACE IF NOT EXISTS """ + self.KEYSPACE + """
         WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' }
         """)
 
-    def create_tables(self):
+    def create_tables(self) -> None:
         sql_create_samples_table = """ CREATE TABLE IF NOT EXISTS """ + self.KEYSPACE + """.""" + self.SAMPLE_TABLE + """ (
             id INT,
             Sale TEXT,
@@ -125,9 +123,8 @@ class CassandraClient:
         session = self.get_session()
         session.execute(sql_create_samples_table)
         session.execute(sql_create_model_history_table)
-        return "Tables created properly"
 
-    def insert_model_history(self, model_history: dict) -> NoReturn:
+    def insert_model_history(self, model_history: dict) -> None:
         self.setup_cassandra()
         model_history_obj = ModelHistory(
             id=int(model_history.get("id")),
@@ -139,7 +136,7 @@ class CassandraClient:
             standard_scaler=model_history.get("standard_scaler"))
         model_history_obj.save()
 
-    def insert_sample(self, sample: dict) -> NoReturn:
+    def insert_sample(self, sample: dict) -> None:
         sample_obj = Sample(
             id=self.LAST_SAMPLE_ID,
             sale=str(sample.get("Sale")),
@@ -169,7 +166,7 @@ class CassandraClient:
         self.LAST_SAMPLE_ID += 1
         sample_obj.save()
 
-    def add_some_data(self):
+    def add_some_data(self) -> None:
         model_history = {
             "id": 1,
             "name": "new model",
@@ -210,10 +207,10 @@ class CassandraClient:
         self.insert_model_history(model_history)
         self.insert_sample(sample)
 
-    def get_model_history_all(self):
+    def get_model_history_all(self) -> List[dict]:
         self.setup_cassandra()
         return [dict(row) for row in ModelHistory.objects.all()]
 
-    def get_sample_all(self):
+    def get_sample_all(self) -> List[dict]:
         self.setup_cassandra()
         return [dict(row) for row in Sample.objects.all()]

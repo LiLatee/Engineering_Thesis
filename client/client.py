@@ -17,7 +17,7 @@ headers = ['Sale', 'SalesAmountInEuro', 'time_delay_for_conversion', 'click_time
            'product_country', 'product_id', 'product_title', 'partner_id', 'user_id']
 
 
-def sort_data_file_by_timestamp():
+def sort_data_file_by_timestamp() -> None:
     timestamp_column_number = [3]
     csvsort(not_sorted_data_file_name,
             timestamp_column_number,
@@ -26,13 +26,13 @@ def sort_data_file_by_timestamp():
             delimiter='\t')
 
 
-async def consumer_handler(websocket, path):
+async def consumer_handler(websocket, path) -> None:
     async for message in websocket:
         if message == 'start':
             await process_all_samples(websocket, path)
 
 
-async def process_all_samples(websocket, path):
+async def process_all_samples(websocket, path) -> None:
     send_samples_for_model_training()
     chunksize = 1000
     samples_num = 0
@@ -53,7 +53,7 @@ async def process_all_samples(websocket, path):
                 requests.request(method='GET', url='http://engineeringthesis_prediction_server_1:5000/update_start', data=chunk.to_json())
 
 
-async def send_model_info_to_websocket(websocket, samples_num):
+async def send_model_info_to_websocket(websocket, samples_num) -> None:
     message = {
         "samples": samples_num,
         "model_name": 0,
@@ -63,7 +63,7 @@ async def send_model_info_to_websocket(websocket, samples_num):
     await websocket.send(json.dumps(message))
 
 
-def send_samples_for_model_training():
+def send_samples_for_model_training() -> None:
     data = pd.read_csv(
         data_file_name,
         sep='\t',
@@ -76,6 +76,5 @@ def send_samples_for_model_training():
 
 if __name__ == "__main__":
     server_waiting_for_start = websockets.serve(consumer_handler, "0.0.0.0", 8765)
-
     asyncio.get_event_loop().run_until_complete(server_waiting_for_start)
     asyncio.get_event_loop().run_forever()
