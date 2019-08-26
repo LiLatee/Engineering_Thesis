@@ -10,3 +10,8 @@ def get_num_of_good_predictions(samples):
         if str(sample_json.get("Sale")) == str(sample_json.get("predicted")):
             predicted += 1
     return predicted
+
+
+def is_prediction_correct(sample):
+    return str(sample.get("Sale")) == str(sample.get("predicted"))
+

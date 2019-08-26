@@ -3,12 +3,14 @@ import websockets
 import json
 import time
 from DatabaseRedis import DatabaseRedis
-from evaluation_metrics import get_num_of_good_predictions
+from cass_client import CassandraClient
+from evaluation_metrics import is_prediction_correct
 
 class EvaluationServer:
 
     def __init__(self) -> None:
         self.redis = DatabaseRedis()
+        self.cass = CassandraClient()
         self.num_processed_samples = 0
         self.correct_predictions = 0
 
@@ -25,13 +27,19 @@ class EvaluationServer:
 
     def process_latest_samples_and_create_message(self):
         processed_samples = self.redis.get_all_samples_as_list_of_bytes()
-        self.num_processed_samples += len(processed_samples)
-        self.correct_predictions += get_num_of_good_predictions(processed_samples)
+        for sample in processed_samples:
+            sample_json = json.loads(sample.decode('utf8'))
+            self.num_processed_samples += 1
+            self.check_correct_prediction(sample_json)
+            self.cass.insert_sample(sample_json)
         return {
             'processed_samples': self.num_processed_samples,
             'correct_predictions': self.correct_predictions,
         }
 
+    def check_correct_prediction(self, sample):
+        if is_prediction_correct(sample):
+            self.correct_predictions += 1
 
 if __name__ == "__main__":
     evaluation_server = EvaluationServer()

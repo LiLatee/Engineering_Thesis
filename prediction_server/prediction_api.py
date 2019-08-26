@@ -21,7 +21,7 @@ def restart():
 
 @app.route('/sample')
 def sample():
-    return str(get_sample_all())
+    return str(len(get_sample_all()))
 
 
 @app.route('/fit', methods=['POST'])
