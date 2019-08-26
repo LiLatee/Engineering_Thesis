@@ -39,6 +39,7 @@ class ModelSGDClassifier:
         self.last_sample_id: Optional[int] = None
         self.required_column_names_list: List[str] = self.read_required_column_names()
         self.redis_DB = DatabaseRedis()
+        self.redis_DB.del_all_samples()
 
     def create_model_and_save(self, json_training_data: JSONType) -> None:
         # print("create_model_and_save")
