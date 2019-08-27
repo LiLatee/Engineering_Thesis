@@ -1,27 +1,28 @@
 from flask import Flask, request
 import json
 from MLModel import MLModel
-from cass_client import create_tables, get_model_history_all, restart_cassandra, get_sample_all
+from cass_client import CassandraClient
 import json
 
 app = Flask(__name__)
 model = MLModel()
+cass = CassandraClient()
 
 @app.route('/')
 def hello_world():
-    return str(get_model_history_all())
+    return str(cass.get_model_history_all())
     # return 'Hello, World!'
 
 
 @app.route('/restart')
 def restart():
-    restart_cassandra()
+    cass.restart_cassandra()
     return 'Cassandra restarted'
 
 
 @app.route('/sample')
 def sample():
-    return str(get_sample_all())
+    return str(cass.get_sample_all())
     # return str(len(get_sample_all()))
 
 
