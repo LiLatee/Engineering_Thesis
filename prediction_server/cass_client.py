@@ -50,6 +50,8 @@ class Sample(Model):
     product_title = columns.Text()
     partner_id = columns.Text()
     user_id = columns.Text()
+    predicted = columns.Text()
+    probabilities = columns.List(columns.Float)
 
 
 def setup_cassandra():
@@ -105,6 +107,8 @@ def create_tables():
         product_title TEXT,
         partner_id TEXT,
         user_id TEXT,
+        predicted TEXT,
+        probabilities LIST<float>,
         PRIMARY KEY(id)
         ); """
     sql_create_model_history_table = """ CREATE TABLE IF NOT EXISTS """ + KEYSPACE + """.""" + MODEL_HISTORY_TABLE + """ (
@@ -165,7 +169,9 @@ def insert_sample(sample: dict) -> NoReturn:
         product_id=str(sample.get("product_id")),
         product_title=str(sample.get("product_title")),
         partner_id=str(sample.get("partner_id")),
-        user_id=str(sample.get("user_id"))
+        user_id=str(sample.get("user_id")),
+        predicted=str(sample.get("predicted")),
+        probabilities=sample.get("probabilities")
     )
     LAST_SAMPLE_ID += 1
     sample_obj.save()

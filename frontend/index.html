@@ -25,6 +25,8 @@
         <h4 id="model-name"></h4>
         <h4>Current model version:</h4>
         <h4 id="model-version"></h4>
+        <h4>Roc Auc score:</h4>
+        <h4 id="roc-auc-score"></h4>
     </div>
     <div id="chart"></div>
     <script type="text/javascript">
@@ -64,6 +66,8 @@
 
             var samples = document.getElementById("samples");
             samples.innerHTML = message["processed_samples"];
+            var roc_auc_score = document.getElementById("roc-auc-score");
+            roc_auc_score.innerHTML = message["roc_auc_score"].toPrecision([3]);
 
             if(cnt > 500) {
                 Plotly.relayout('chart',{

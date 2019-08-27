@@ -4,7 +4,7 @@ import json
 import time
 from redis_client import RedisClient
 from cass_client import CassandraClient
-from evaluation_metrics import is_prediction_correct
+from evaluation_metrics import is_prediction_correct, get_roc_auc_score
 from typing import Union, Any
 
 
@@ -34,14 +34,22 @@ class EvaluationServer:
             self.num_processed_samples += 1
             self.check_correct_prediction(sample_json)
             self.cass.insert_sample(sample_json)
+        roc_auc_score = 0
+        if self.num_processed_samples > 50:
+            roc_auc_score = self.calculate_roc_auc_score(None, None)
         return {
-            'processed_samples': self.num_processed_samples,
-            'correct_predictions': self.correct_predictions,
+            "processed_samples": self.num_processed_samples,
+            "correct_predictions": self.correct_predictions,
+            "roc_auc_score": roc_auc_score
         }
 
     def check_correct_prediction(self, sample: Union[str, Any]) -> None:
         if is_prediction_correct(sample):
             self.correct_predictions += 1
+
+    def calculate_roc_auc_score(self, id_first_sample: int, id_last_sample: int):
+        samples = self.cass.get_sample_all()
+        return get_roc_auc_score(samples)
 
 
 if __name__ == "__main__":

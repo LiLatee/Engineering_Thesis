@@ -39,6 +39,8 @@ services:
       - ./evaluation_server:/usr/src/app
     ports:
       - 8766:8766
+    stdin_open: true
+    tty: true
 
   cassandra:
     image: cassandra:3.11.4
