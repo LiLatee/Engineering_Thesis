@@ -26,10 +26,10 @@ services:
     links:
       - redis_service
 
-  client:
-    build: ./client
+  data_provider:
+    build: data_provider
     volumes:
-      - ./client:/usr/src/app
+      - ./data_provider:/usr/src/app
     ports:
       - 8765:8765
 
