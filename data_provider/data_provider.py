@@ -34,7 +34,6 @@ async def consumer_handler(websocket, path) -> None:
 
 async def process_all_samples(websocket, path) -> None:
     send_samples_for_model_training()
-    print("DONEEEEEEE")
     chunksize = 1000
     samples_num = 0
     for chunk in pd.read_csv(

@@ -86,11 +86,6 @@ class ModelSGDClassifier:
     def create_train_and_test_sets(self, training_data_json) -> List[np.ndarray]:
         # print("create_train_and_test_sets")
         data_as_list_of_dicts = json.loads(training_data_json)
-        file = open("test2.txt", 'a')
-        file.write("TUUUUUUUUUUUUUUUUUUUUUUUU00000000000000")
-        file.write(str(type(data_as_list_of_dicts)))
-        file.write(str(data_as_list_of_dicts))
-        file.close()
 
         list_of_dicts_of_samples = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(data_as_list_of_dicts)
 
@@ -153,11 +148,6 @@ class ModelSGDClassifier:
         # print('create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns')
 
         new_dict = dict.fromkeys(self.required_column_names_list, 0)
-        file = open("test2.txt", 'a')
-        file.write(str("TUUUUUUUUUUUUUUUU"))
-        file.writelines(str(type(new_dict)))
-        file.write(str(type(old_dict)))
-        file.close()
 
         new_dict['Sale'] = old_dict['Sale']
         new_dict['SalesAmountInEuro'] = old_dict['SalesAmountInEuro']
