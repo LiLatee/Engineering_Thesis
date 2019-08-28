@@ -15,16 +15,18 @@ services:
       build: ./prediction_server
       volumes:
         - ./prediction_server:/usr/src/app
+      depends_on:
+        - cassandra
       ports:
         - 5000:5000
 
-  worker:
-    image: engineeringthesis_prediction_server:latest
-    command: rq worker --url redis://redis_service:6379 queue_update_model
-    depends_on:
-      - redis_service
-    links:
-      - redis_service
+#  worker:
+#    image: engineeringthesis_prediction_server:latest
+#    command: rq worker --url redis://redis_service:6379 queue_update_model
+#    depends_on:
+#      - redis_service
+#    links:
+#      - redis_service
 
   data_provider:
     build: data_provider
@@ -37,6 +39,9 @@ services:
     build: ./evaluation_server
     volumes:
       - ./evaluation_server:/usr/src/app
+    depends_on:
+      - cassandra
+    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "evaluation_server.py"]
     ports:
       - 8766:8766
     stdin_open: true
@@ -44,8 +49,8 @@ services:
 
   cassandra:
     image: cassandra:3.11.4
-    volumes:
-      - "./cassandra-init.sh:/cassandra-init.sh"
+#    volumes:
+#      - "./cassandra-init.sh:/cassandra-init.sh"
 #    command: "sh /cassandra-init.sh"
     ports:
       - 9042:9042
