@@ -271,22 +271,38 @@ class ModelSGDClassifier:
         # print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
 
         db = CassandraClient()
-        last_sample_id = db.get_last_sample_id()
-        # file = open("test3.txt", 'w')
-        # file.write(str(last_sample_id))
-        # file.write(str(type(last_sample_id)))
-        #
-        # file.close()
-        model_history = dict.fromkeys(['id', 'name', 'version', 'timestamp', 'last_sample_id', 'model', 'standard_scaler', 'pca'])
+        # last_sample_id = db.get_last_sample_id()
+
         # None, "SGDClassifier", 0, None, last_sample_id, self.model, self.sc, self.pca
-        model_history['id'] = -1
-        model_history['name'] = 'SGDClassifier'
-        model_history['version'] = 0
-        model_history['timestamp'] = -1
-        model_history['last_sample_id'] = last_sample_id
-        model_history['model'] = pickle.dumps(self.model)
-        model_history['standard_scaler'] = pickle.dumps(self.sc)
-        model_history['pca'] = pickle.dumps(self.pca)
+        # model_history = ModelHistory(
+        #     id=-1,
+        #     name='SGDClassifier',
+        #     version=0,
+        #     creation_timestamp='-1',
+        #     model=pickle.dumps(self.model),
+        #     standard_scaler=pickle.dumps(self.sc),
+        #     pca=pickle.dumps(self.pca))
+
+        model_history = {
+            "id": -1,
+            "name": "SGDClassifier",
+            "version": 0,
+            "timestamp":  1598891820,
+            # "timestamp":  '2016-04-06 13:06:11.534',
+            "model": pickle.dumps(self.model),
+            "standard_scaler": pickle.dumps(self.model),
+            "pca": pickle.dumps(self.model)
+        }
+
+        # model_history = dict.fromkeys(['id', 'name', 'version', 'timestamp', 'last_sample_id', 'model', 'standard_scaler', 'pca'])
+        # model_history['id'] = -1
+        # model_history['name'] = 'SGDClassifier'
+        # model_history['version'] = 0
+        # model_history['timestamp'] = 1598891820
+        # model_history['model'] = pickle.dumps(self.model)
+        # model_history['standard_scaler'] = pickle.dumps(self.sc)
+        # model_history['pca'] = pickle.dumps(self.pca)
+
         db.insert_model_history(model_history)
         print("LOG: saving model DONE")
 

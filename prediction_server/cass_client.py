@@ -7,7 +7,7 @@ from cassandra import util
 from cqlengine import columns
 from cqlengine.models import Model
 from cqlengine.connection import setup
-from typing import List
+from typing import List, Dict, Union
 
 
 class ModelHistory(Model):
@@ -15,20 +15,10 @@ class ModelHistory(Model):
     name = columns.Text()
     version = columns.Integer()
     creation_timestamp = columns.Text()
-    last_sample_id = columns.Integer()
     model = columns.Bytes()
     standard_scaler = columns.Bytes()
     pca = columns.Bytes()
-    #
-    # def __init__(self, id: int, name: str, version: int, creation_timestamp: str, last_sample_id: int,  model, standard_scaler, pca):
-    #     self.id: int = id
-    #     self.name: str = name
-    #     self.version: int = version
-    #     self.creation_timestamp: str = creation_timestamp
-    #     self.last_sample_id: int = last_sample_id
-    #     self.model = model
-    #     self.sc = standard_scaler
-    #     self.pca = pca
+
 
 class Sample(Model):
     id = columns.Integer(primary_key=True)
@@ -126,7 +116,6 @@ class CassandraClient:
             name TEXT,
             version INT,
             creation_timestamp TIMESTAMP,
-            last_sample_id INT,
             model BLOB,
             standard_scaler BLOB,
             pca BLOB,
@@ -138,14 +127,13 @@ class CassandraClient:
         session.execute(sql_create_samples_table)
         session.execute(sql_create_model_history_table)
 
-    def insert_model_history(self, model_history: dict) -> None:
+    def insert_model_history(self, model_history: Dict[str, Union[str, int, bytes]]) -> None:
         self.setup_cassandra()
         model_history_obj = ModelHistory(
             id=int(model_history.get("id")),
             name=str(model_history.get("name")),
             version=int(model_history.get("version")),
             creation_timestamp=str(util.datetime_from_timestamp(model_history.get("timestamp"))),
-            last_sample_id=int(model_history.get("last_sample_id")),
             model=model_history.get("model"),
             standard_scaler=model_history.get("standard_scaler"),
             pca=model_history.get("pca"))
@@ -190,9 +178,9 @@ class CassandraClient:
             "version": 21,
             "timestamp":  1598891820,
             # "timestamp":  '2016-04-06 13:06:11.534',
-            "last_sample_id": 583,
             "model": bytes('None', 'utf-8'),
-            "standard_scaler": bytes('None', 'utf-8')
+            "standard_scaler": bytes('None', 'utf-8'),
+            "pca": bytes('None', 'utf-8')
         }
         sample = {
             "id": 2,
@@ -228,12 +216,12 @@ class CassandraClient:
         self.setup_cassandra()
         return [dict(row) for row in ModelHistory.objects.all()]
 
-    def get_last_sample_id(self):
-        self.setup_cassandra()
-        all = Sample.objects().all()
-        if len(all) == 0:
-            return -1
-        return all[-1].id
+    # def get_last_sample_id(self):
+    #     self.setup_cassandra()
+    #     all = Sample.objects().all()
+    #     if len(all) == 0:
+    #         return -1
+    #     return all[-1].id
 
     def get_sample_all(self) -> List[dict]:
         self.setup_cassandra()
