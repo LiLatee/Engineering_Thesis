@@ -7,8 +7,8 @@ from redis_client import get_model_version
 import json
 
 not_sorted_data_file_name = '../data/CriteoSearchData.csv'
-data_file_name = 'data/CriteoSearchDataSorted.csv'
-train_model_samples_number = 1000
+data_file_name = 'data/CriteoSearchData-sorted-no-duplicates.csv'
+train_model_samples_number = 10000
 
 headers = ['Sale', 'SalesAmountInEuro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
            'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',
@@ -34,6 +34,7 @@ async def consumer_handler(websocket, path) -> None:
 
 async def process_all_samples(websocket, path) -> None:
     send_samples_for_model_training()
+    print("DONEEEEEEE")
     chunksize = 1000
     samples_num = 0
     for chunk in pd.read_csv(
@@ -68,9 +69,10 @@ def send_samples_for_model_training() -> None:
         data_file_name,
         sep='\t',
         nrows=train_model_samples_number,
-        names=headers,
+        header=0,
         usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
-    requests.request(method='POST', url='http://prediction_server:5000/fit', data=data.to_json())
+
+    requests.request(method='POST', url='http://prediction_server:5000/fit', data=data.to_json(orient='records'))
     print('data for training was send. ' + str(data.shape))
 
 

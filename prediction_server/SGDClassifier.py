@@ -41,14 +41,14 @@ class ModelSGDClassifier:
         self.redis_DB = DatabaseRedis()
         self.redis_DB.del_all_samples()
 
-    def create_model_and_save(self, json_training_data: JSONType) -> None:
+    def create_model_and_save(self, training_data_json: JSONType) -> None:
         # print("create_model_and_save")
 
-        df_original = pd.read_json(json_training_data) # TODO wywalic DATAFRAME
+        # df_original = pd.read_json(json_training_data) # TODO wywalic DATAFRAME
         # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
 
         start = time.time()
-        x_test_std, x_train_std, y_test, y_train = self.create_train_and_test_sets(df_original)
+        x_test_std, x_train_std, y_test, y_train = self.create_train_and_test_sets(training_data_json)
         end = time.time()
         print('Czas tworzenia zbiorów: {0}'.format((end-start)))
         # ppn = Perceptron(eta0=0.1, random_state=1, n_jobs=-1)
@@ -83,9 +83,16 @@ class ModelSGDClassifier:
         self.model = lr
         self.save_model()
 
-    def create_train_and_test_sets(self, df: pd.DataFrame) -> List[np.ndarray]:
+    def create_train_and_test_sets(self, training_data_json) -> List[np.ndarray]:
         # print("create_train_and_test_sets")
-        list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df)
+        data_as_list_of_dicts = json.loads(training_data_json)
+        file = open("test2.txt", 'a')
+        file.write("TUUUUUUUUUUUUUUUUUUUUUUUU00000000000000")
+        file.write(str(type(data_as_list_of_dicts)))
+        file.write(str(data_as_list_of_dicts))
+        file.close()
+
+        list_of_dicts_of_samples = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(data_as_list_of_dicts)
 
         # x = []
         # y = []
@@ -123,25 +130,19 @@ class ModelSGDClassifier:
 
         return [x_test_std, x_train_std, y_test, y_train]
 
-    def transform_df_into_list_of_one_hot_vectors_dicts(self, df_to_transform: pd.DataFrame) -> List:
+    def transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(self, list_of_dicts: List[RowAsDictType])-> List[RowAsDictType]:
         # print("transform_df_into_df_with_one_hot_vectors")
-        data_as_dict = json.loads(df_to_transform.T.to_json())
-
         samples = []
-        for row_number, row_as_dict in data_as_dict.items():
-            json_row = json.dumps(row_as_dict)
-            samples.append(self.transform_json_row_in_one_hot_vectors_dict(json_row))
-
-
+        for row_as_dict in list_of_dicts:
+            samples.append(self.transform_dict_row_in_one_hot_vectors_dict(row_as_dict))
 
         # df = pd.DataFrame(samples)
         # df = df.fillna(0)
 
         return samples
 
-    def transform_json_row_in_one_hot_vectors_dict(self, row_as_json: JSONType) -> Dict[str, Union[str, float, int]]:
+    def transform_dict_row_in_one_hot_vectors_dict(self, row_as_dict: RowAsDictType) -> RowAsDictType:
         # print('transform_json_row_in_one_hot_vectors_dict')
-        row_as_dict = json.loads(row_as_json)
 
         transformed_row_as_dict = self.create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns(row_as_dict)
         transformed_row_as_dict = self.set_values_to_one_hot_vectors_columns(row_as_dict, transformed_row_as_dict)
@@ -152,6 +153,12 @@ class ModelSGDClassifier:
         # print('create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns')
 
         new_dict = dict.fromkeys(self.required_column_names_list, 0)
+        file = open("test2.txt", 'a')
+        file.write(str("TUUUUUUUUUUUUUUUU"))
+        file.writelines(str(type(new_dict)))
+        file.write(str(type(old_dict)))
+        file.close()
+
         new_dict['Sale'] = old_dict['Sale']
         new_dict['SalesAmountInEuro'] = old_dict['SalesAmountInEuro']
         new_dict['time_delay_for_conversion'] = old_dict[
@@ -190,7 +197,7 @@ class ModelSGDClassifier:
 
     def predict(self, sample_json: JSONType) -> Tuple[np.ndarray, np.ndarray]:
 
-        transformed_sample_dict = list(self.transform_json_row_in_one_hot_vectors_dict(sample_json).values())
+        transformed_sample_dict = list(self.transform_dict_row_in_one_hot_vectors_dict(json.loads(sample_json)).values())
 
         transformed_sample_dict = transformed_sample_dict[3:]  # remove sales features from sample
         transformed_sample_dict = self.pca.transform([transformed_sample_dict])
@@ -222,7 +229,7 @@ class ModelSGDClassifier:
         # # list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df_samples_to_update)
         #
         # samples_list_of_bytes = self.redis_DB.get_all_samples_as_list_of_bytes()
-        # list_of_dicts_of_samples = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(samples_list_of_bytes)
+        # list_of_dicts_of_samples = self.transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(samples_list_of_bytes)
         #
         # # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
         #
@@ -238,7 +245,6 @@ class ModelSGDClassifier:
         # y = np.array(y)
         # # x = df_one_hot_vectors.iloc[:, 3:].values
         # # y = df_one_hot_vectors['Sale'].values.ravel()
-        # print(x)
         # x = self.pca.transform(x)
         # adasyn = ADASYN(random_state=1)
         # x, y = adasyn.fit_resample(x, y) #TODO blad jak wszystkie probki sa z jedne klasy
@@ -250,18 +256,12 @@ class ModelSGDClassifier:
         # self.save_model()
         # print("LOG: updating model DONE")
 
-    def transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(self, samples_list_of_jsons) -> List:
+    def transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(self, samples_list_of_jsons) -> List:
         # print("transform_df_into_df_with_one_hot_vectors")
         # data_as_dict = json.loads(df_to_transform.T.to_json())
-
         samples = []
         for sample_as_json in samples_list_of_jsons:
-            samples.append(self.transform_json_row_in_one_hot_vectors_dict(sample_as_json))
-
-
-
-        # df = pd.DataFrame(samples)
-        # df = df.fillna(0)
+            samples.append(self.transform_dict_row_in_one_hot_vectors_dict(json.loads(sample_as_json)))
 
         return samples
 
@@ -336,7 +336,7 @@ class ModelSGDClassifier:
                          header=0,
                          low_memory=False)
 
-        training_data_json = df.to_json()
+        training_data_json = df.to_json(orient='records')
 
         print("Training...")
         start = time.time()
@@ -361,8 +361,8 @@ class ModelSGDClassifier:
 
 if __name__ == '__main__':
     m = ModelSGDClassifier()
-    # m.test_train(n_samples_for_training=10000)
-    m.load_model()
-    m.test_predict_1k()
+    # m.test_train(n_samples_for_training=1000)
+    # m.load_model()
+    # m.test_predict_1k()
     # m.update_model()
 

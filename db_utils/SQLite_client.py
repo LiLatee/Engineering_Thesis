@@ -199,7 +199,7 @@ if __name__ == '__main__':
     db = DatabaseSQLite()
     # db.create_tables()
     df = db.read_csv_data(
-        filepath='/home/marcin/PycharmProjects/Engineering_Thesis/dataset/CriteoSearchData-sorted.csv', rows=10)
+        filepath='/home/marcin/PycharmProjects/Engineering_Thesis/data/CriteoSearchData-sorted.csv', rows=10)
     one_row = df[1:2].squeeze()
     # db.add_row_from_json(one_row.to_json())
     # print(db.select_all_samples_as_df())
