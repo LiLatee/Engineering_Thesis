@@ -12,13 +12,14 @@ services:
     restart: always
 
   prediction_server:
-      build: ./prediction_server
-      volumes:
-        - ./prediction_server:/usr/src/app
-      depends_on:
-        - cassandra
-      ports:
-        - 5000:5000
+    container_name: prediction_server
+    build: ./prediction_server
+    volumes:
+      - ./prediction_server:/usr/src/app
+    depends_on:
+      - cassandra
+    ports:
+      - 5000:5000
 
 #  worker:
 #    image: engineeringthesis_prediction_server:latest
@@ -29,6 +30,7 @@ services:
 #      - redis_service
 
   data_provider:
+    container_name: data_provider
     build: data_provider
     volumes:
       - ./data_provider:/usr/src/app
@@ -36,6 +38,7 @@ services:
       - 8765:8765
 
   evaluation_server:
+    container_name: evaluation_server
     build: ./evaluation_server
     volumes:
       - ./evaluation_server:/usr/src/app
@@ -48,6 +51,7 @@ services:
     tty: true
 
   cassandra:
+    container_name: cassandra
     image: cassandra:3.11.4
 #    volumes:
 #      - "./cassandra-init.sh:/cassandra-init.sh"

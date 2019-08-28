@@ -60,7 +60,7 @@ class CassandraClient:
         self.restart_cassandra()
 
     def setup_cassandra(self) -> None:
-        setup(hosts=['engineeringthesis_cassandra_1'], default_keyspace=self.KEYSPACE)
+        setup(hosts=['cassandra'], default_keyspace=self.KEYSPACE)
 
     def restart_cassandra(self) -> None:
         self.setup_cassandra()
@@ -70,7 +70,7 @@ class CassandraClient:
         self.create_tables()
 
     def get_session(self) -> Session:
-        cluster = Cluster(['engineeringthesis_cassandra_1'], port=9042)
+        cluster = Cluster(['cassandra'], port=9042)
         session = cluster.connect()
         self.create_keyspace(session)
         session.set_keyspace(self.KEYSPACE)
