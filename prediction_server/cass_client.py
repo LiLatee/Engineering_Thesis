@@ -18,7 +18,17 @@ class ModelHistory(Model):
     last_sample_id = columns.Integer()
     model = columns.Bytes()
     standard_scaler = columns.Bytes()
-
+    pca = columns.Bytes()
+    #
+    # def __init__(self, id: int, name: str, version: int, creation_timestamp: str, last_sample_id: int,  model, standard_scaler, pca):
+    #     self.id: int = id
+    #     self.name: str = name
+    #     self.version: int = version
+    #     self.creation_timestamp: str = creation_timestamp
+    #     self.last_sample_id: int = last_sample_id
+    #     self.model = model
+    #     self.sc = standard_scaler
+    #     self.pca = pca
 
 class Sample(Model):
     id = columns.Integer(primary_key=True)
@@ -119,6 +129,7 @@ class CassandraClient:
             last_sample_id INT,
             model BLOB,
             standard_scaler BLOB,
+            pca BLOB,
             PRIMARY KEY(id)
             );
             """
@@ -136,7 +147,8 @@ class CassandraClient:
             creation_timestamp=str(util.datetime_from_timestamp(model_history.get("timestamp"))),
             last_sample_id=int(model_history.get("last_sample_id")),
             model=model_history.get("model"),
-            standard_scaler=model_history.get("standard_scaler"))
+            standard_scaler=model_history.get("standard_scaler"),
+            pca=model_history.get("pca"))
         model_history_obj.save()
 
     def insert_sample(self, sample: dict) -> None:
@@ -215,6 +227,13 @@ class CassandraClient:
     def get_model_history_all(self) -> List[dict]:
         self.setup_cassandra()
         return [dict(row) for row in ModelHistory.objects.all()]
+
+    def get_last_sample_id(self):
+        self.setup_cassandra()
+        all = Sample.objects().all()
+        if len(all) == 0:
+            return -1
+        return all[-1].id
 
     def get_sample_all(self) -> List[dict]:
         self.setup_cassandra()

@@ -10,6 +10,9 @@ import cass_client as db
 import ModelInfo
 import time
 
+from cass_client import ModelHistory
+from cass_client import CassandraClient
+
 from DatabaseRedis import DatabaseRedis
 from typing import List, Dict, NoReturn, Union, Any, Optional, Tuple
 from sklearn.model_selection import train_test_split
@@ -206,7 +209,8 @@ class ModelSGDClassifier:
 
         self.redis_DB.rpush_sample(sample_json)
 
-
+        db = CassandraClient()
+        db.insert_sample(sample_dict)
         # db = DatabaseSQLite.DatabaseSQLite()
         # db.add_row_from_json(sample_json=sample_json)
 
@@ -256,22 +260,35 @@ class ModelSGDClassifier:
         return samples
 
     def save_model(self) -> None:
-        pass
-        # if self.model is None:
-        #     print("LOG: " + "There is not model available. Must be created.")
-        # # zapisywanie modelu do pliku
-        # # current_dir = os.path.dirname(__file__)
-        # # dest = os.path.join('pickle_objects')
-        # # if not os.path.exists(dest):
-        # #     os.makedirs(dest)
-        # # pickle.dump(self.model, open(os.path.join(dest, "SGDClassifier.pkl"), mode='wb'), protocol=4)
-        # # print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
+        if self.model is None:
+            print("LOG: " + "There is not model available. Must be created.")
+        # zapisywanie modelu do pliku
+        # current_dir = os.path.dirname(__file__)
+        # dest = os.path.join('pickle_objects')
+        # if not os.path.existsaki po prostu jest(dest):
+        #     os.makedirs(dest)
+        # pickle.dump(self.model, open(os.path.join(dest, "SGDClassifier.pkl"), mode='wb'), protocol=4)
+        # print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
+
+        db = CassandraClient()
+        last_sample_id = db.get_last_sample_id()
+        # file = open("test3.txt", 'w')
+        # file.write(str(last_sample_id))
+        # file.write(str(type(last_sample_id)))
         #
-        # db = DatabaseSQLite.DatabaseSQLite()
-        # last_sample_id = db.get_last_sample_id()
-        # model_info = ModelInfo.ModelInfo(None, "SGDClassifier", 0, None, last_sample_id, self.model, self.sc, self.pca)
-        # db.add_model(model_info)
-        # print("LOG: saving model DONE")
+        # file.close()
+        model_history = dict.fromkeys(['id', 'name', 'version', 'timestamp', 'last_sample_id', 'model', 'standard_scaler', 'pca'])
+        # None, "SGDClassifier", 0, None, last_sample_id, self.model, self.sc, self.pca
+        model_history['id'] = -1
+        model_history['name'] = 'SGDClassifier'
+        model_history['version'] = 0
+        model_history['timestamp'] = -1
+        model_history['last_sample_id'] = last_sample_id
+        model_history['model'] = pickle.dumps(self.model)
+        model_history['standard_scaler'] = pickle.dumps(self.sc)
+        model_history['pca'] = pickle.dumps(self.pca)
+        db.insert_model_history(model_history)
+        print("LOG: saving model DONE")
 
     def load_model(self) -> None:
         pass

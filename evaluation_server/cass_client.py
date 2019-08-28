@@ -18,6 +18,7 @@ class ModelHistory(Model):
     last_sample_id = columns.Integer()
     model = columns.Bytes()
     standard_scaler = columns.Bytes()
+    pca = columns.Bytes()
 
 
 class Sample(Model):
@@ -120,6 +121,7 @@ class CassandraClient:
             last_sample_id INT,
             model BLOB,
             standard_scaler BLOB,
+            pca BLOB,
             PRIMARY KEY(id)
             );
             """
@@ -137,7 +139,9 @@ class CassandraClient:
             creation_timestamp=str(util.datetime_from_timestamp(model_history.get("timestamp"))),
             last_sample_id=int(model_history.get("last_sample_id")),
             model=model_history.get("model"),
-            standard_scaler=model_history.get("standard_scaler"))
+            standard_scaler=model_history.get("standard_scaler"),
+            pca=model_history.get("pca"))
+
         model_history_obj.save()
 
     def insert_sample(self, sample: dict) -> None:
@@ -181,7 +185,8 @@ class CassandraClient:
             # "timestamp":  '2016-04-06 13:06:11.534',
             "last_sample_id": 583,
             "model": bytes('None', 'utf-8'),
-            "standard_scaler": bytes('None', 'utf-8')
+            "standard_scaler": bytes('None', 'utf-8'),
+            "pca": bytes('None', 'utf-8')
         }
         sample = {
             "id": 2,
