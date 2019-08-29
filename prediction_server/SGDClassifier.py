@@ -5,12 +5,10 @@ import os
 import json
 import collections
 
-import cass_client as db
 # import DatabaseSQLite
 import ModelInfo
 import time
 
-from cass_client import ModelHistory
 from cass_client import CassandraClient
 
 from DatabaseRedis import DatabaseRedis
@@ -23,7 +21,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, classification_report, accuracy_score, balanced_accuracy_score
 
 import redis
-from rq import Queue
+# from rq import Queue
 import requests
 
 JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
@@ -42,6 +40,7 @@ class ModelSGDClassifier:
         self.last_sample_id: Optional[int] = None
         self.required_column_names_list: List[str] = self.read_required_column_names()
         self.redis_DB = DatabaseRedis()
+        self.cassandra_DB = CassandraClient()
         self.redis_DB.del_all_samples()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:
@@ -152,12 +151,19 @@ class ModelSGDClassifier:
 
         new_dict = dict.fromkeys(self.required_column_names_list, 0)
 
-        new_dict['Sale'] = old_dict['Sale']
-        new_dict['SalesAmountInEuro'] = old_dict['SalesAmountInEuro']
-        new_dict['time_delay_for_conversion'] = old_dict[
-            'time_delay_for_conversion']
-        new_dict['click_timestamp'] = old_dict['click_timestamp']
-        new_dict['nb_clicks_1week'] = old_dict['nb_clicks_1week']
+        # new_dict['Sale'] = old_dict['Sale']
+        # new_dict['SalesAmountInEuro'] = old_dict['SalesAmountInEuro']
+        # new_dict['time_delay_for_conversion'] = old_dict[
+        #     'time_delay_for_conversion']
+        # new_dict['click_timestamp'] = old_dict['click_timestamp']
+        # new_dict['nb_clicks_1week'] = old_dict['nb_clicks_1week']
+
+        new_dict['sale'] = int(old_dict['sale'])
+        new_dict['sales_amount_in_euro'] = old_dict['sales_amount_in_euro']
+        new_dict['time_delay_for_conversion'] = int(old_dict[
+            'time_delay_for_conversion'])
+        new_dict['click_timestamp'] = int(old_dict['click_timestamp'])
+        new_dict['nb_clicks_1week'] = int(old_dict['nb_clicks_1week'])
 
         return new_dict
 
@@ -208,47 +214,49 @@ class ModelSGDClassifier:
 
 
         self.redis_DB.rpush_sample(sample_json)
-
-        db = CassandraClient()
-        db.insert_sample(sample_dict)
+        print("TUUUUUUUUUU")
+        print(sample_dict)
+        self.cassandra_DB.insert_sample(sample_dict)
         # db = DatabaseSQLite.DatabaseSQLite()
         # db.add_row_from_json(sample_json=sample_json)
 
         return y, probability
 
     def update_model(self) -> None:
-        pass
-        # # db = DatabaseSQLite.DatabaseSQLite()
-        # # df_samples_to_update = db.get_samples_to_update_model_as_df()
-        # # list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df_samples_to_update)
-        #
-        # samples_list_of_bytes = self.redis_DB.get_all_samples_as_list_of_bytes()
-        # list_of_dicts_of_samples = self.transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(samples_list_of_bytes)
-        #
-        # # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
-        #
-        # # x = []
-        # # y = []
-        # # for s in array_of_dicts_of_samples:
-        # #     x.append(list(s.values())[3:])
-        # #     y.append(list(s.values())[:1][0])
-        #
-        # x = [list(s.values())[3:] for s in list_of_dicts_of_samples]
-        # y = [list(s.values())[:1][0] for s in list_of_dicts_of_samples]
-        # x = np.array(x)
-        # y = np.array(y)
-        # # x = df_one_hot_vectors.iloc[:, 3:].values
-        # # y = df_one_hot_vectors['Sale'].values.ravel()
-        # x = self.pca.transform(x)
-        # adasyn = ADASYN(random_state=1)
-        # x, y = adasyn.fit_resample(x, y) #TODO blad jak wszystkie probki sa z jedne klasy
-        # x = self.sc.transform(x)
-        # x = normalize(x, norm='l2')
-        # y = np.array([int(i) for i in y])
-        #
-        # self.model.partial_fit(x, y, classes=np.array([0, 1]))
-        # self.save_model()
-        # print("LOG: updating model DONE")
+        # db = DatabaseSQLite.DatabaseSQLite()
+        # df_samples_to_update = db.get_samples_to_update_model_as_df()
+        # list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df_samples_to_update)
+
+        samples_list_of_dicts = self.cassandra_DB.get_sample_all_as_list_of_dicts()
+        # list_of_dicts_of_samples = self.transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
+        samples_list_of_dicts = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
+        # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
+
+        # x = []
+        # y = []
+        # for s in array_of_dicts_of_samples:
+        #     x.append(list(s.values())[3:])
+        #     y.append(list(s.values())[:1][0])
+
+        x = [list(s.values())[3:] for s in samples_list_of_dicts]
+        y = [list(s.values())[:1][0] for s in samples_list_of_dicts]
+        x = np.array(x)
+        y = np.array(y)
+        # x = df_one_hot_vectors.iloc[:, 3:].values
+        # y = df_one_hot_vectors['Sale'].values.ravel()
+
+        x = self.pca.transform(x)
+        adasyn = ADASYN(random_state=1)
+        x, y = adasyn.fit_resample(x, y) #TODO blad jak wszystkie probki sa z jedne klasy
+        x = self.sc.transform(x)
+        x = normalize(x, norm='l2')
+        y = np.array([int(i) for i in y])
+
+        self.model.partial_fit(x, y, classes=np.array([0, 1]))
+        self.save_model()
+
+
+        print("LOG: updating model DONE")
 
     def transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(self, samples_list_of_jsons) -> List:
         # print("transform_df_into_df_with_one_hot_vectors")
@@ -260,8 +268,11 @@ class ModelSGDClassifier:
         return samples
 
     def save_model(self) -> None:
-        if self.model is None:
-            print("LOG: " + "There is not model available. Must be created.")
+        pass
+        # if self.model is None:
+        #     print("LOG: " + "There is not model available. Must be created.")
+
+
         # zapisywanie modelu do pliku
         # current_dir = os.path.dirname(__file__)
         # dest = os.path.join('pickle_objects')
@@ -270,7 +281,9 @@ class ModelSGDClassifier:
         # pickle.dump(self.model, open(os.path.join(dest, "SGDClassifier.pkl"), mode='wb'), protocol=4)
         # print("LOG: " + "model saved in directory: " + current_dir + '\\' + dest + '\SGDClassifier.pkl')
 
-        db = CassandraClient()
+
+        # zapisywanie do cassandry
+        # db = CassandraClient()
         # last_sample_id = db.get_last_sample_id()
 
         # None, "SGDClassifier", 0, None, last_sample_id, self.model, self.sc, self.pca
@@ -283,47 +296,44 @@ class ModelSGDClassifier:
         #     standard_scaler=pickle.dumps(self.sc),
         #     pca=pickle.dumps(self.pca))
 
-        model_history = {
-            "id": -1,
-            "name": "SGDClassifier",
-            "version": 0,
-            "timestamp":  1598891820,
-            # "timestamp":  '2016-04-06 13:06:11.534',
-            "model": pickle.dumps(self.model),
-            "standard_scaler": pickle.dumps(self.model),
-            "pca": pickle.dumps(self.model)
-        }
-
-        # model_history = dict.fromkeys(['id', 'name', 'version', 'timestamp', 'last_sample_id', 'model', 'standard_scaler', 'pca'])
-        # model_history['id'] = -1
-        # model_history['name'] = 'SGDClassifier'
-        # model_history['version'] = 0
-        # model_history['timestamp'] = 1598891820
-        # model_history['model'] = pickle.dumps(self.model)
-        # model_history['standard_scaler'] = pickle.dumps(self.sc)
-        # model_history['pca'] = pickle.dumps(self.pca)
-
-        db.insert_model_history(model_history)
-        print("LOG: saving model DONE")
+        # pca_binary = pickle.dumps(self.pca)
+        # pca_bytes = len(pca_binary)
+        # print('TUUUUUUUU')
+        # print(pca_bytes)
+        # model_history = {
+        #     "id": -1,
+        #     "name": "SGDClassifier",
+        #     "version": 0,
+        #     "timestamp":  1598891820,
+        #     # "timestamp":  '2016-04-06 13:06:11.534',
+        #     "model": pickle.dumps(self.model),
+        #     "standard_scaler": pickle.dumps(self.sc),
+        #     "pca_one": pca_binary[:1000000],
+        #     "pca_two": pca_binary[1000000:2000000]
+        # }
+        #
+        # db.insert_model_history(model_history)
+        # print("LOG: saving model DONE")
 
     def load_model(self) -> None:
         pass
-        # # current_dir = os.path.dirname(__file__)
-        # # self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
-        # # print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
-        # db = DatabaseSQLite.DatabaseSQLite()
-        # model_info = db.get_last_model_info()
-        # self.model = model_info.model
-        # self.sc = model_info.sc
-        # self.pca = model_info.pca
-        #
-        # print("LOG: " + "Model loaded.")
+        # current_dir = os.path.dirname(__file__)
+        # self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
+        # print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
 
-    def test_predict_1k(self):
+
+        # db = CassandraClient()
+        # model_history = db.get_last_model_history()
+        # self.model = pickle.loads(model_history.model)
+        # self.sc = pickle.loads(model_history.standard_scaler)
+        # self.pca = pickle.loads(model_history.pca_one+model_history.pca)
+
+
+    def test_predict(self, n_of_samples):
         print("Testing...")
-        df = pd.read_csv('/home/marcin/PycharmProjects/Engineering_Thesis/dataset/CriteoSearchData-sorted-no-duplicates.csv',
+        df = pd.read_csv('/home/marcin/PycharmProjects/Engineering_Thesis/data_provider/data/CriteoSearchData-sorted-no-duplicates.csv',
                          sep='\t',
-                         nrows=1000,
+                         nrows=n_of_samples,
                          low_memory=False)
 
 
@@ -332,7 +342,7 @@ class ModelSGDClassifier:
 
         for id, row in df.iterrows():
             y, prob = self.predict(row.to_json())
-            y_test = np.append(y_test, row['Sale'])
+            y_test = np.append(y_test, row['sale'])
             y_pred = np.append(y_pred, y)
 
 
@@ -352,7 +362,7 @@ class ModelSGDClassifier:
         print(confmat)
 
     def test_train(self, n_samples_for_training: int) -> None:
-        df = pd.read_csv('/home/marcin/PycharmProjects/Engineering_Thesis/dataset/CriteoSearchData-sorted-no-duplicates.csv',
+        df = pd.read_csv('/home/marcin/PycharmProjects/Engineering_Thesis/data_provider/data/CriteoSearchData-sorted-no-duplicates.csv',
                          sep='\t',
                          nrows=n_samples_for_training,
                          skiprows=np.arange(1,50001),
@@ -384,8 +394,22 @@ class ModelSGDClassifier:
 
 if __name__ == '__main__':
     m = ModelSGDClassifier()
-    # m.test_train(n_samples_for_training=1000)
-    # m.load_model()
-    # m.test_predict_1k()
+    db = CassandraClient()
+    db.restart_cassandra()
+    print(len(db.get_sample_all_as_list_of_dicts()))
+    m.test_train(n_samples_for_training=1000)
+    # m.test_predict(1000)
+    # print(len(db.get_sample_all_as_list_of_dicts()))
     # m.update_model()
+    m.test_predict(3)
+    print(len(db.get_sample_all_as_list_of_dicts()))
+    print(db.get_sample_all_as_list_of_dicts()[-1])
+    # db.add_some_data()
+    # db.add_some_data()
+    # db.add_some_data()
+
+    # print(len(db.get_sample_all()))
+    # print((db.get_sample_all()))
+
+    # m.load_model()
 

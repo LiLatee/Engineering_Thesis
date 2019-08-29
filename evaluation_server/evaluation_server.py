@@ -48,7 +48,7 @@ class EvaluationServer:
             self.correct_predictions += 1
 
     def calculate_roc_auc_score(self, id_first_sample: int, id_last_sample: int):
-        samples = self.cass.get_sample_all()
+        samples = self.cass.get_sample_all_as_list_of_dicts()
         return get_roc_auc_score(samples)
 
 

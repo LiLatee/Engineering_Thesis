@@ -22,7 +22,7 @@ def restart():
 
 @app.route('/sample')
 def sample():
-    return str(cass.get_sample_all())
+    return str(cass.get_sample_all_as_list_of_dicts())
     # return str(len(get_sample_all()))
 
 
