@@ -2,13 +2,16 @@
 # 1. docker exec -it <container_with_cassandra> bash
 # 2. cqlsh
 
+import time
 from cassandra.cluster import Cluster, Session
 from cassandra import util
 from cqlengine import columns
 from cqlengine.models import Model
 from cqlengine.connection import setup
+from cqlengine import TimeUUID, MinTimeUUID
 from typing import List, Dict, Union
 import uuid
+import datetime
 # class ModelHistory(Model):
 #     id = columns.Integer(primary_key=True)
 #     name = columns.Text()
@@ -20,9 +23,9 @@ import uuid
 #     pca_two = columns.Bytes()
 #
 
-
 class Sample(Model):
-    id = columns.UUID(primary_key=True)
+    # id = columns.UUID(primary_key=True)
+    id = columns.TimeUUID(primary_key=True)
     sale = columns.Text()
     sales_amount_in_euro = columns.Text()
     time_delay_for_conversion = columns.Text()
@@ -60,9 +63,10 @@ class CassandraClient:
         self.LAST_SAMPLE_ID = 1
         self.restart_cassandra()
 
+
     def setup_cassandra(self) -> None:
-        setup(hosts=['127.0.0.1'], default_keyspace=self.KEYSPACE)
-        # setup(hosts=['cassandra'], default_keyspace=self.KEYSPACE)
+        # setup(hosts=['127.0.0.1'], default_keyspace=self.KEYSPACE)
+        setup(hosts=['cassandra'], default_keyspace=self.KEYSPACE)
 
     def restart_cassandra(self) -> None:
         self.setup_cassandra()
@@ -72,8 +76,8 @@ class CassandraClient:
         self.create_tables()
 
     def get_session(self) -> Session:
-        cluster = Cluster(['127.0.0.1'], port=9042)
-        # cluster = Cluster(['cassandra'], port=9042)
+        # cluster = Cluster(['127.0.0.1'], port=9042)
+        cluster = Cluster(['cassandra'], port=9042)
 
         session = cluster.connect()
         self.create_keyspace(session)
@@ -88,7 +92,7 @@ class CassandraClient:
 
     def create_tables(self) -> None:
         sql_create_samples_table = """ CREATE TABLE IF NOT EXISTS """ + self.KEYSPACE + """.""" + self.SAMPLE_TABLE + """ (
-            id UUID,
+            id TimeUUID,
             sale TEXT,
             sales_amount_in_euro TEXT,
             time_delay_for_conversion TEXT,
@@ -148,7 +152,7 @@ class CassandraClient:
 
     def insert_sample(self, sample: dict) -> None:
         sample_obj = Sample(
-            id=uuid.uuid1(),
+            id=columns.TimeUUID.from_datetime(datetime.datetime.now()),
             sale=str(sample.get("sale")),
             sales_amount_in_euro=str(sample.get("sales_amount_in_euro")),
             time_delay_for_conversion=str(sample.get("time_delay_for_conversion")),
@@ -234,6 +238,11 @@ class CassandraClient:
 
     def get_sample_all_as_list_of_dicts(self) -> List[dict]:
         return [dict(row) for row in Sample.objects.all()]
+
+    # def test(self):
+    #     min_time = datetime.datetime(1982, 1, 1)
+    #     result = Sample.objects.filter(id__gt=MinTimeUUID(min_time))
+        # 'aed43d8c-cb10-11e9-8e44-bca8a6d633c8'
 
 
 if __name__ == '__main__':
