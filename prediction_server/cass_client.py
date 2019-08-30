@@ -10,6 +10,7 @@ from cqlengine.models import Model
 from cqlengine.connection import setup
 from cqlengine import TimeUUID, MinTimeUUID, MaxTimeUUID
 from typing import List, Dict, Union
+from cassandra.query import dict_factory
 import uuid
 import datetime
 
@@ -233,27 +234,24 @@ class CassandraClient:
     #     self.setup_cassandra()
     #     return ModelHistory.objects().all()[-1]
 
-    def get_last_sample_id(self):
-        last_sample = Sample.objects().all()[-1]
+ # todo dodać obsług≥e błedów, jak select nic nie zwraca WSZEDZIE
+    def get_last_sample_uuid(self):
+        last_sample = Sample.objects().all()[-2] #todo zmienic na -1
         return last_sample.id
 
-    def get_sample_all_as_list_of_dicts(self) -> List[dict]:
+    def get_samples_for_model_update_as_list_of_dicts(self) -> List[dict]:
         return [dict(row) for row in Sample.objects.all()]
 
-    def test(self):
-        min_time = datetime.datetime(1982, 1, 1)
-        max_time = datetime.datetime(2050, 1, 1)
+    def get_samples_to_update_model_as_list_of_dicts(self, uuid):
         session = self.get_session()
-        result12 = session.execute('''SELECT toUnixTimestamp(id) FROM sample ''')
-        print(result12[0][0])
-        result1 = session.execute('''SELECT id, toUnixTimestamp(id), toTimestamp(id)  FROM sample ''')
-        print(result1[0][0].time)
+        session.row_factory = dict_factory
+        query = """SELECT * FROM sample WHERE id > """ + str(uuid) + " ALLOW FILTERING"
+        query_result = session.execute(query)
+        result = []
+        for sample in query_result:
+            result.append(sample)
 
-        # result = session.execute('''SELECT * FROM sample WHERE toUnixTimestamp(id) = %s''', [str(result12[0][0])])
-        result = session.execute('''SELECT * FROM sample WHERE sale=%s ALLOW FILTERING''', ['0'])
-
-        # result = Sample.objects.filter(id__gt=MinTimeUUID(min_time), id__lt=MaxTimeUUID(max_time))
-        return result[0]
+        return result
         # 'aed43d8c-cb10-11e9-8e44-bca8a6d633c8'
 
 
@@ -261,6 +259,6 @@ if __name__ == '__main__':
     db = CassandraClient()
     db.restart_cassandra()
     db.add_some_data()
-    print(db.get_sample_all_as_list_of_dicts())
-    print(type(db.get_sample_all_as_list_of_dicts()[0]))
-    print(len(db.get_sample_all_as_list_of_dicts()))
+    print(db.get_samples_for_model_update_as_list_of_dicts())
+    print(type(db.get_samples_for_model_update_as_list_of_dicts()[0]))
+    print(len(db.get_samples_for_model_update_as_list_of_dicts()))

@@ -227,7 +227,7 @@ class ModelSGDClassifier:
         # df_samples_to_update = db.get_samples_to_update_model_as_df()
         # list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df_samples_to_update)
 
-        samples_list_of_dicts = self.cassandra_DB.get_sample_all_as_list_of_dicts()
+        samples_list_of_dicts = self.cassandra_DB.get_samples_for_model_update_as_list_of_dicts()
         # list_of_dicts_of_samples = self.transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
         samples_list_of_dicts = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
         # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
@@ -390,27 +390,16 @@ class ModelSGDClassifier:
         # probability = self.model.predict_proba(tests)
         # print("y: %s\t probability: %s" % (str(y), str(probability)))
 
-
-
 if __name__ == '__main__':
     m = ModelSGDClassifier()
     db = CassandraClient()
-    print(db.test())
-    # db.restart_cassandra()
+    uuid_sample = db.get_last_sample_uuid()
+    samples = db.get_samples_to_update_model_as_list_of_dicts(uuid_sample)
+    print(type(samples))
+    print((samples[0]))
+
     # print(len(db.get_sample_all_as_list_of_dicts()))
     # m.test_train(n_samples_for_training=1000)
-    # # m.test_predict(1000)
-    # # print(len(db.get_sample_all_as_list_of_dicts()))
-    # # m.update_model()
     # m.test_predict(3)
-    # print(len(db.get_sample_all_as_list_of_dicts()))
-    # print(db.get_sample_all_as_list_of_dicts())
-    # db.add_some_data()
-    # db.add_some_data()
-    # db.add_some_data()
 
-    # print(len(db.get_sample_all()))
-    # print((db.get_sample_all()))
-
-    # m.load_model()
 
