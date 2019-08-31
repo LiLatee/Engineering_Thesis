@@ -14,20 +14,10 @@ from cassandra.query import dict_factory
 import uuid
 import datetime
 
-# class ModelHistory(Model):
-#     id = columns.Integer(primary_key=True)
-#     name = columns.Text()
-#     version = columns.Integer()
-#     creation_timestamp = columns.Text()
-#     model = columns.Bytes()
-#     standard_scaler = columns.Bytes()
-#     pca_one = columns.Bytes()
-#     pca_two = columns.Bytes()
-#
 
 class Sample(Model):
-    # id = columns.UUID(primary_key=True)
-    id = columns.TimeUUID(primary_key=True)
+    id = columns.Integer(primary_key=True)
+    # id = columns.TimeUUID(primary_key=True)
     sale = columns.Text()
     sales_amount_in_euro = columns.Text()
     time_delay_for_conversion = columns.Text()
@@ -65,6 +55,8 @@ class CassandraClient:
         self.LAST_SAMPLE_ID = 1
         self.setup_cassandra()
 
+        self.session = self.get_session()
+
 
     def setup_cassandra(self) -> None:
         setup(hosts=['127.0.0.1'], default_keyspace=self.KEYSPACE)
@@ -75,13 +67,13 @@ class CassandraClient:
         session = self.get_session()
         session.execute('DROP KEYSPACE IF EXISTS ' + self.KEYSPACE)
         self.create_keyspace(session)
-        self.create_tables()
 
     def get_session(self) -> Session:
         cluster = Cluster(['127.0.0.1'], port=9042)
         # cluster = Cluster(['cassandra'], port=9042)
 
         session = cluster.connect()
+        session.row_factory = dict_factory
         self.create_keyspace(session)
         session.set_keyspace(self.KEYSPACE)
         return session
@@ -92,69 +84,9 @@ class CassandraClient:
         WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' }
         """)
 
-    def create_tables(self) -> None:
-        sql_create_samples_table = """ CREATE TABLE IF NOT EXISTS """ + self.KEYSPACE + """.""" + self.SAMPLE_TABLE + """ (
-            id TimeUUID,
-            sale TEXT,
-            sales_amount_in_euro TEXT,
-            time_delay_for_conversion TEXT,
-            click_timestamp TEXT,
-            nb_clicks_1week TEXT,
-            product_price TEXT,
-            product_age_group TEXT,
-            device_type TEXT,
-            audience_id TEXT,
-            product_gender TEXT,
-            product_brand TEXT,
-            product_category_1 TEXT,
-            product_category_2 TEXT,
-            product_category_3 TEXT,
-            product_category_4 TEXT,
-            product_category_5 TEXT,
-            product_category_6 TEXT,
-            product_category_7 TEXT,
-            product_country TEXT,
-            product_id TEXT,
-            product_title TEXT,
-            partner_id TEXT,
-            user_id TEXT,
-            predicted TEXT,
-            probabilities LIST<float>,
-            PRIMARY KEY(id)
-            ); """
-        # sql_create_model_history_table = """ CREATE TABLE IF NOT EXISTS """ + self.KEYSPACE + """.""" + self.MODEL_HISTORY_TABLE + """ (
-        #     id INT,
-        #     name TEXT,
-        #     version INT,
-        #     creation_timestamp TIMESTAMP,
-        #     model BLOB,
-        #     standard_scaler BLOB,
-        #     pca_one BLOB,
-        #     pca_two BLOB,
-        #     PRIMARY KEY(id)
-        #     );
-        #     """
-
-        session = self.get_session()
-        session.execute(sql_create_samples_table)
-        # session.execute(sql_create_model_history_table)
-
-    # def insert_model_history(self, model_history: Dict[str, Union[str, int, bytes]]) -> None:
-    #     self.setup_cassandra()
-    #     model_history_obj = ModelHistory(
-    #         id=int(model_history.get("id")),
-    #         name=str(model_history.get("name")),
-    #         version=int(model_history.get("version")),
-    #         creation_timestamp=str(util.datetime_from_timestamp(model_history.get("timestamp"))),
-    #         model=model_history.get("model"),
-    #         standard_scaler=model_history.get("standard_scaler"),
-    #         pca_one=model_history.get("pca_one"),
-    #         pca_two=model_history.get("pca_two"))
-    #     model_history_obj.save()
-
     def insert_sample(self, sample: dict) -> None:
         sample_obj = Sample(
-            id=columns.TimeUUID.from_datetime(datetime.datetime.now()),
+            id=self.LAST_SAMPLE_ID,
             sale=str(sample.get("sale")),
             sales_amount_in_euro=str(sample.get("sales_amount_in_euro")),
             time_delay_for_conversion=str(sample.get("time_delay_for_conversion")),
@@ -183,6 +115,7 @@ class CassandraClient:
         )
         self.LAST_SAMPLE_ID += 1
         sample_obj.save()
+
 
     def add_some_data(self) -> None:
         # model_history = {
@@ -226,39 +159,46 @@ class CassandraClient:
         # self.insert_model_history(model_history)
         self.insert_sample(sample)
 
-    # def get_model_history_all(self) -> List[dict]:
-    #     self.setup_cassandra()
-    #     return [dict(row) for row in ModelHistory.objects.all()]
-    #
-    # def get_last_model_history(self):
-    #     self.setup_cassandra()
-    #     return ModelHistory.objects().all()[-1]
-
  # todo dodać obsług≥e błedów, jak select nic nie zwraca WSZEDZIE
-    def get_last_sample_uuid(self):
-        last_sample = Sample.objects().all()[-2] #todo zmienic na -1
-        return last_sample.id
-
-    def get_samples_for_model_update_as_list_of_dicts(self) -> List[dict]:
-        return [dict(row) for row in Sample.objects.all()]
-
-    def get_samples_to_update_model_as_list_of_dicts(self, uuid):
-        session = self.get_session()
-        session.row_factory = dict_factory
-        query = """SELECT * FROM sample WHERE id > """ + str(uuid) + " ALLOW FILTERING"
-        query_result = session.execute(query)
+    def get_last_sample_id(self):
+        query = """SELECT MAX(id) FROM sample"""
+        query_result = self.session.execute(query)
         result = []
         for sample in query_result:
             result.append(sample)
 
+        return result[0]['system.max(id)']
+
+    def get_all_samples_as_list_of_dicts(self) -> List[dict]:
+        return [dict(row) for row in Sample.objects.all()]
+
+    def delete_all_samples(self):
+        query = 'TRUNCATE sample'
+        self.session.execute(query)
+
+    def get_samples_for_update_model_as_list_of_dicts(self, id):
+        if id is None:
+            query = """SELECT * FROM sample"""
+            query_result = self.session.execute(query)
+        else:
+            query = """SELECT * FROM sample WHERE id > %s ALLOW FILTERING"""
+            query_result = self.session.execute(query, [id])
+
+        result = []
+        for sample in query_result:
+            result.append(sample)
+
+        print("len")
+        print(len(result))
+
         return result
-        # 'aed43d8c-cb10-11e9-8e44-bca8a6d633c8'
 
 
 if __name__ == '__main__':
     db = CassandraClient()
     db.restart_cassandra()
     db.add_some_data()
-    print(db.get_samples_for_model_update_as_list_of_dicts())
-    print(type(db.get_samples_for_model_update_as_list_of_dicts()[0]))
-    print(len(db.get_samples_for_model_update_as_list_of_dicts()))
+    id = db.get_last_sample_id()
+    print(db.get_samples_for_update_model_as_list_of_dicts(id))
+    print(type(db.get_samples_for_update_model_as_list_of_dicts(id)[0]))
+    print(len(db.get_samples_for_update_model_as_list_of_dicts(id)))

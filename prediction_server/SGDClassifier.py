@@ -37,7 +37,7 @@ class ModelSGDClassifier:
         self.sc: StandardScaler = None
         # self.df_original: pd.DataFrame = None
         self.pca = None
-        self.last_sample_id: Optional[int] = None
+        self.last_sample_id = None
         self.required_column_names_list: List[str] = self.read_required_column_names()
         self.redis_DB = DatabaseRedis()
         self.cassandra_DB = CassandraClient()
@@ -214,9 +214,8 @@ class ModelSGDClassifier:
 
 
         self.redis_DB.rpush_sample(sample_json)
-        print("TUUUUUUUUUU")
-        print(sample_dict)
-        self.cassandra_DB.insert_sample(sample_dict)
+
+        self.cassandra_DB.insert_sample(sample_dict) # todo usunąć
         # db = DatabaseSQLite.DatabaseSQLite()
         # db.add_row_from_json(sample_json=sample_json)
 
@@ -227,7 +226,7 @@ class ModelSGDClassifier:
         # df_samples_to_update = db.get_samples_to_update_model_as_df()
         # list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df_samples_to_update)
 
-        samples_list_of_dicts = self.cassandra_DB.get_samples_for_model_update_as_list_of_dicts()
+        samples_list_of_dicts = self.cassandra_DB.get_samples_for_update_model_as_list_of_dicts(self.last_sample_id)
         # list_of_dicts_of_samples = self.transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
         samples_list_of_dicts = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
         # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
@@ -255,6 +254,7 @@ class ModelSGDClassifier:
         self.model.partial_fit(x, y, classes=np.array([0, 1]))
         self.save_model()
 
+        self.last_sample_id = db.get_last_sample_id()
 
         print("LOG: updating model DONE")
 
@@ -393,13 +393,29 @@ class ModelSGDClassifier:
 if __name__ == '__main__':
     m = ModelSGDClassifier()
     db = CassandraClient()
-    uuid_sample = db.get_last_sample_uuid()
-    samples = db.get_samples_to_update_model_as_list_of_dicts(uuid_sample)
-    print(type(samples))
-    print((samples[0]))
 
-    # print(len(db.get_sample_all_as_list_of_dicts()))
+    db.delete_all_samples()
+    #
     # m.test_train(n_samples_for_training=1000)
-    # m.test_predict(3)
+    # m.test_predict(10)
+    # print(len(db.get_samples_for_update_model_as_list_of_dicts(1)))
+    #
+    # print((db.get_samples_for_update_model_as_list_of_dicts(5)))
+    # print((db.get_all_samples_as_list_of_dicts()[0]['system.totimestamp(id)']))
 
+    print(len(db.get_all_samples_as_list_of_dicts()))
+    m.test_train(n_samples_for_training=1000)
+    m.test_predict(1000)
+    print(len(db.get_all_samples_as_list_of_dicts()))
+    m.update_model()
+    print((db.get_last_sample_id()))
+    print(m.last_sample_id)
+    m.test_predict(2000)
+    m.update_model()
+    print(len(db.get_all_samples_as_list_of_dicts()))
 
+    # m.update_model()
+    # uuid_sample = db.get_last_sample_uuid()
+    # samples = db.get_samples_for_update_model_as_list_of_dicts(uuid_sample)
+    # print(type(samples))
+    # print((samples[0]))

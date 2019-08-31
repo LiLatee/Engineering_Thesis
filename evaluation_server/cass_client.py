@@ -24,8 +24,8 @@ import datetime
 #
 
 class Sample(Model):
-    # id = columns.UUID(primary_key=True)
-    id = columns.TimeUUID(primary_key=True)
+    id = columns.Integer(primary_key=True)
+    # id = columns.TimeUUID(primary_key=True)
     sale = columns.Text()
     sales_amount_in_euro = columns.Text()
     time_delay_for_conversion = columns.Text()
@@ -92,7 +92,7 @@ class CassandraClient:
 
     def create_tables(self) -> None:
         sql_create_samples_table = """ CREATE TABLE IF NOT EXISTS """ + self.KEYSPACE + """.""" + self.SAMPLE_TABLE + """ (
-            id TimeUUID,
+            id INT,
             sale TEXT,
             sales_amount_in_euro TEXT,
             time_delay_for_conversion TEXT,
@@ -152,7 +152,7 @@ class CassandraClient:
 
     def insert_sample(self, sample: dict) -> None:
         sample_obj = Sample(
-            id=columns.TimeUUID.from_datetime(datetime.datetime.now()),
+            id=self.LAST_SAMPLE_ID,
             sale=str(sample.get("sale")),
             sales_amount_in_euro=str(sample.get("sales_amount_in_euro")),
             time_delay_for_conversion=str(sample.get("time_delay_for_conversion")),
