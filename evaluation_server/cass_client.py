@@ -10,6 +10,7 @@ from cqlengine.models import Model
 from cqlengine.connection import setup
 from cqlengine import TimeUUID, MinTimeUUID
 from typing import List, Dict, Union
+from cqlengine.management import sync_table
 import uuid
 import datetime
 # class ModelHistory(Model):
@@ -73,7 +74,8 @@ class CassandraClient:
         session = self.get_session()
         session.execute('DROP KEYSPACE IF EXISTS ' + self.KEYSPACE)
         self.create_keyspace(session)
-        self.create_tables()
+        # self.create_tables()
+        sync_table(Sample)
 
     def get_session(self) -> Session:
         # cluster = Cluster(['127.0.0.1'], port=9042)
