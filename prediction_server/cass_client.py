@@ -65,22 +65,22 @@ class CassandraClient:
         self.LAST_SAMPLE_ID = 1
         self.setup_cassandra()
 
-        self.session = self.get_session()
 
     def setup_cassandra(self) -> None:
-        # setup(hosts=['127.0.0.1'], default_keyspace=self.KEYSPACE)
-        setup(hosts=['cassandra'], default_keyspace=self.KEYSPACE)
+        setup(hosts=['127.0.0.1'], default_keyspace=self.KEYSPACE)
+        # setup(hosts=['cassandra'], default_keyspace=self.KEYSPACE)
 
-    # def restart_cassandra(self) -> None:
-    #     self.setup_cassandra()
-    #     session = self.get_session()
-    #     session.execute('DROP KEYSPACE IF EXISTS ' + self.KEYSPACE)
-    #     self.create_keyspace(session)
-    #     self.create_tables()
+    def restart_cassandra(self) -> None:
+        self.setup_cassandra()
+        session = self.get_session()
+        session.execute('DROP KEYSPACE IF EXISTS ' + self.KEYSPACE)
+        self.create_keyspace(session)
+        self.create_tables()
 
     def get_session(self) -> Session:
-        # cluster = Cluster(['127.0.0.1'], port=9042)
-        cluster = Cluster(['cassandra'], port=9042)
+        cluster = Cluster(['127.0.0.1'], port=9042)
+        # cluster = Cluster(['cassandra'], port=9042)
+
         session = cluster.connect()
         self.create_keyspace(session)
         session.set_keyspace(self.KEYSPACE)
@@ -92,52 +92,52 @@ class CassandraClient:
         WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' }
         """)
 
-    # def create_tables(self) -> None:
-    #     sql_create_samples_table = """ CREATE TABLE IF NOT EXISTS """ + self.KEYSPACE + """.""" + self.SAMPLE_TABLE + """ (
-    #         id TimeUUID,
-    #         sale TEXT,
-    #         sales_amount_in_euro TEXT,
-    #         time_delay_for_conversion TEXT,
-    #         click_timestamp TEXT,
-    #         nb_clicks_1week TEXT,
-    #         product_price TEXT,
-    #         product_age_group TEXT,
-    #         device_type TEXT,
-    #         audience_id TEXT,
-    #         product_gender TEXT,
-    #         product_brand TEXT,
-    #         product_category_1 TEXT,
-    #         product_category_2 TEXT,
-    #         product_category_3 TEXT,
-    #         product_category_4 TEXT,
-    #         product_category_5 TEXT,
-    #         product_category_6 TEXT,
-    #         product_category_7 TEXT,
-    #         product_country TEXT,
-    #         product_id TEXT,
-    #         product_title TEXT,
-    #         partner_id TEXT,
-    #         user_id TEXT,
-    #         predicted TEXT,
-    #         probabilities LIST<float>,
-    #         PRIMARY KEY(id)
-    #         ); """
-    #     # sql_create_model_history_table = """ CREATE TABLE IF NOT EXISTS """ + self.KEYSPACE + """.""" + self.MODEL_HISTORY_TABLE + """ (
-    #     #     id INT,
-    #     #     name TEXT,
-    #     #     version INT,
-    #     #     creation_timestamp TIMESTAMP,
-    #     #     model BLOB,
-    #     #     standard_scaler BLOB,
-    #     #     pca_one BLOB,
-    #     #     pca_two BLOB,
-    #     #     PRIMARY KEY(id)
-    #     #     );
-    #     #     """
-    #
-    #     session = self.get_session()
-    #     session.execute(sql_create_samples_table)
-    #     # session.execute(sql_create_model_history_table)
+    def create_tables(self) -> None:
+        sql_create_samples_table = """ CREATE TABLE IF NOT EXISTS """ + self.KEYSPACE + """.""" + self.SAMPLE_TABLE + """ (
+            id TimeUUID,
+            sale TEXT,
+            sales_amount_in_euro TEXT,
+            time_delay_for_conversion TEXT,
+            click_timestamp TEXT,
+            nb_clicks_1week TEXT,
+            product_price TEXT,
+            product_age_group TEXT,
+            device_type TEXT,
+            audience_id TEXT,
+            product_gender TEXT,
+            product_brand TEXT,
+            product_category_1 TEXT,
+            product_category_2 TEXT,
+            product_category_3 TEXT,
+            product_category_4 TEXT,
+            product_category_5 TEXT,
+            product_category_6 TEXT,
+            product_category_7 TEXT,
+            product_country TEXT,
+            product_id TEXT,
+            product_title TEXT,
+            partner_id TEXT,
+            user_id TEXT,
+            predicted TEXT,
+            probabilities LIST<float>,
+            PRIMARY KEY(id)
+            ); """
+        # sql_create_model_history_table = """ CREATE TABLE IF NOT EXISTS """ + self.KEYSPACE + """.""" + self.MODEL_HISTORY_TABLE + """ (
+        #     id INT,
+        #     name TEXT,
+        #     version INT,
+        #     creation_timestamp TIMESTAMP,
+        #     model BLOB,
+        #     standard_scaler BLOB,
+        #     pca_one BLOB,
+        #     pca_two BLOB,
+        #     PRIMARY KEY(id)
+        #     );
+        #     """
+
+        session = self.get_session()
+        session.execute(sql_create_samples_table)
+        # session.execute(sql_create_model_history_table)
 
     # def insert_model_history(self, model_history: Dict[str, Union[str, int, bytes]]) -> None:
     #     self.setup_cassandra()

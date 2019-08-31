@@ -5,8 +5,8 @@ from pandas import DataFrame
 
 class DatabaseRedis:
     def __init__(self):
-        self.redis = redis.StrictRedis(host='redis_service', port=6379, db=0)
-        # self.redis = redis.StrictRedis(host='127.0.0.1', port=6379, db=0)
+        # self.redis = redis.StrictRedis(host='redis_service', port=6379, db=0)
+        self.redis = redis.StrictRedis(host='127.0.0.1', port=6379, db=0)
 
 
     def rpush_sample(self, json_sample):
