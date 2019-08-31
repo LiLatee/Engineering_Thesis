@@ -2,7 +2,6 @@
 # 1. docker exec -it <container_with_cassandra> bash
 # 2. cqlsh
 
-
 from cassandra.cluster import Cluster, Session
 from cqlengine import columns
 from cqlengine.models import Model
@@ -67,11 +66,11 @@ class CassandraClient:
     def get_session(self) -> Session:
         # cluster = Cluster(['127.0.0.1'], port=9042)
         cluster = Cluster(['cassandra'], port=9042)
+
         session = cluster.connect()
         session.row_factory = dict_factory
         self.create_keyspace(session)
         session.set_keyspace(self.KEYSPACE)
-
         return session
 
     def create_keyspace(self, session: Session) -> None:

@@ -1,6 +1,23 @@
 version: '3'
 
 services:
+
+
+  cassandra:
+    container_name: cassandra
+    image: cassandra:3.11.4
+    #    volumes:
+    #      - "./cassandra-init.sh:/cassandra-init.sh"
+    #    command: "sh /cassandra-init.sh"
+    ports:
+      - 9042:9042
+    environment:
+      - CASSANDRA_RPC_ADDRESS=0.0.0.0
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+
+
   redis_service:
     container_name: redis_service
     image: redis
@@ -18,8 +35,23 @@ services:
       - ./prediction_server:/usr/src/app
     depends_on:
       - cassandra
+      - cassandra_api
+    command: ["./wait-for-it.sh", "cassandra:9042", "cassandra_api:8764", "--", "python", "prediction_api.py"]
+
     ports:
       - 5000:5000
+
+  cassandra_api:
+    container_name: cassandra_api
+    build: ./cassandra_api
+    volumes:
+      - ./cassandra_api:/usr/src/app
+    depends_on:
+      - cassandra
+    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "cassandra_api.py"]
+
+    ports:
+      - 8764:8764
 
 #  worker:
 #    image: engineeringthesis_prediction_server:latest
@@ -49,18 +81,4 @@ services:
       - 8766:8766
     stdin_open: true
     tty: true
-
-  cassandra:
-    container_name: cassandra
-    image: cassandra:3.11.4
-#    volumes:
-#      - "./cassandra-init.sh:/cassandra-init.sh"
-#    command: "sh /cassandra-init.sh"
-    ports:
-      - 9042:9042
-    environment:
-      - CASSANDRA_RPC_ADDRESS=0.0.0.0
-    restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
 

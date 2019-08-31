@@ -1,5 +1,4 @@
 from flask import Flask, request
-import json
 from MLModel import MLModel
 from cass_client import CassandraClient
 import json

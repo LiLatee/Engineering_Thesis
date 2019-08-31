@@ -1,28 +1,23 @@
 import pandas as pd
 import numpy as np
-import pickle
-import os
 import json
 import collections
 
 # import DatabaseSQLite
-import ModelInfo
 import time
 
 from cass_client import CassandraClient
 
 from DatabaseRedis import DatabaseRedis
-from typing import List, Dict, NoReturn, Union, Any, Optional, Tuple
+from typing import List, Dict, Union, Any, Tuple
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler, normalize
 from imblearn.over_sampling import ADASYN
 from sklearn.decomposition import PCA
-from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, classification_report, accuracy_score, balanced_accuracy_score
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, balanced_accuracy_score
 
-import redis
 # from rq import Queue
-import requests
 
 JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 # JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
