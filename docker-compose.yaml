@@ -1,8 +1,9 @@
 version: '3'
 
+volumes:
+  dbdata:
+
 services:
-
-
   cassandra:
     container_name: cassandra
     image: cassandra:3.11.4
@@ -33,11 +34,11 @@ services:
     build: ./prediction_server
     volumes:
       - ./prediction_server:/usr/src/app
+      - "dbdata:/var/lib/ggg"
     depends_on:
       - cassandra
       - cassandra_api
     command: ["./wait-for-it.sh", "cassandra:9042", "cassandra_api:8764", "--", "python", "prediction_api.py"]
-
     ports:
       - 5000:5000
 
@@ -49,7 +50,6 @@ services:
     depends_on:
       - cassandra
     command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "cassandra_api.py"]
-
     ports:
       - 8764:8764
 

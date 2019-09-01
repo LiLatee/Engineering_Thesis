@@ -2,7 +2,7 @@ from flask import Flask, request
 from MLModel import MLModel
 from cass_client import CassandraClient
 import json
-
+from DatabaseSQLite import DatabaseSQLite
 app = Flask(__name__)
 model = MLModel()
 cass = CassandraClient()
@@ -41,8 +41,12 @@ def predict():
 # starts updating a model
 @app.route('/update_start', methods=['GET'])
 def update_start():
-    model.update_start(json.loads(request.data))
-    return ''
+    # model.update_start(json.loads(request.data))
+    db = DatabaseSQLite()
+    print("TUUUUUUUUUUUUUUU")
+    fr =str(db.get_all_models_history_as_df())
+    return fr
+    # return ''
 
 
 # sends signal to model, that updated model is ready and models should be replaced
@@ -54,3 +58,6 @@ def update_ready():
 
 if __name__  == "__main__":
     app.run(host='0.0.0.0', port=5000)
+
+
+
