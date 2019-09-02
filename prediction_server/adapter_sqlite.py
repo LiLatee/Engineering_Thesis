@@ -1,6 +1,7 @@
 import requests
 import json
 from client_SQLite import DatabaseSQLite
+from model_info import ModelInfo
 
 class AdapterDB:
     def __init__(self):
@@ -13,8 +14,13 @@ class AdapterDB:
         return self.sqlite.get_last_sample_id()
 
     def insert_sample(self, sample_dict):
-        self.sqlite.add_row_from_dict(sample_dict=sample_dict)
+        self.sqlite.insert_sample_from_dict(sample_dict=sample_dict)
 
+    def insert_model(self, model_info: ModelInfo):
+        self.sqlite.insert_ModelInfo(model_info)
+
+    def get_last_model_info(self):
+        return self.sqlite.get_last_model_info()
 
 
 if __name__ == '__main__':

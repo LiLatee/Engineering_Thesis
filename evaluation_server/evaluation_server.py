@@ -3,7 +3,7 @@ import websockets
 import json
 import time
 from redis_client import RedisClient
-from client_cass import CassandraClient
+from adapter_cassandra import AdapterDB
 from evaluation_metrics import is_prediction_correct, get_roc_auc_score
 from typing import Union, Any
 
@@ -12,7 +12,7 @@ class EvaluationServer:
 
     def __init__(self) -> None:
         self.redis = RedisClient()
-        self.cass = CassandraClient()
+        self.db = AdapterDB()
         self.num_processed_samples = 0
         self.correct_predictions = 0
 
@@ -33,7 +33,7 @@ class EvaluationServer:
             sample_json = json.loads(sample.decode('utf8'))
             self.num_processed_samples += 1
             self.check_correct_prediction(sample_json)
-            self.cass.insert_sample(sample_json)
+            self.db.insert_sample(sample_json)
         roc_auc_score = 0
         if self.num_processed_samples > 50:
             roc_auc_score = self.calculate_roc_auc_score(None, None)
@@ -48,7 +48,7 @@ class EvaluationServer:
             self.correct_predictions += 1
 
     def calculate_roc_auc_score(self, id_first_sample: int, id_last_sample: int):
-        samples = self.cass.get_all_samples_as_list_of_dicts()
+        samples = self.db.get_all_samples_as_list_of_dicts()
         return get_roc_auc_score(samples)
 
 

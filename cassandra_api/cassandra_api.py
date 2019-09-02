@@ -17,8 +17,7 @@ def get_all_samples_as_list_of_dicts():
 
 @app.route('/samples-for-update', methods=['GET'])
 def get_samples_for_update_model():
-    id = request.args.get('last_sample_id', type=int)
-    print(id)
+    id = request.args.get('last_sample_id')
     return json.dumps(cass.get_samples_for_update_model_as_list_of_dicts(id))
 
 

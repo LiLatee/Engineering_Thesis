@@ -10,10 +10,6 @@ class AdapterDB:
         result = requests.get(self.ADDRESS + 'samples-for-update?last_sample_id=' + str(last_sample_id))
         return json.loads(result.text)
 
-    def get_all_samples_as_list_of_dicts(self):
-        result = requests.get(self.ADDRESS + 'samples-' )
-        return json.loads(result.text)
-
     def get_last_sample_id(self):
         result = requests.get(self.ADDRESS + 'last_sample_id')
         return int(result.text)

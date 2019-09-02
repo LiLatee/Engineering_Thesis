@@ -6,6 +6,7 @@ import model_info
 import time
 from sqlite3 import Error
 from typing import Union, Dict, Any, List
+from model_info import ModelInfo
 
 # JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 JSONType = Union[str, bytes, bytearray]
@@ -74,7 +75,7 @@ class DatabaseSQLite:
         conn.commit()
         conn.close()
 
-    def add_row_from_dict(self, sample_dict: RowAsDictType) -> None:
+    def insert_sample_from_dict(self, sample_dict: RowAsDictType) -> None:
         sql = ''' INSERT INTO samples(  Sale,
                                         SalesAmountInEuro,
                                         time_delay_for_conversion,
@@ -101,7 +102,6 @@ class DatabaseSQLite:
                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) '''
 
         sample_array = sample_dict.values()
-
         conn = self.__create_connection()
 
         cur = conn.cursor()
@@ -111,7 +111,7 @@ class DatabaseSQLite:
 
         return cur.lastrowid
 
-    def add_model(self, model_info: model_info) -> None:
+    def insert_ModelInfo(self, model_info: model_info) -> None:
         sql_query = """ INSERT INTO model_history (name, version, last_sample_id, model, standard_scaler, pca) VALUES (?,?,?,?,?,?)"""
         binary_model = pickle.dumps(model_info.model)
         binary_standard_scaler = pickle.dumps(model_info.sc)
@@ -135,12 +135,18 @@ class DatabaseSQLite:
                         WHERE id = (SELECT max(id) FROM model_history)"""
         conn = self.__create_connection()
         result = conn.execute(sql_query).fetchone()
-        model_info = model_info.ModelInfo(result[0], result[1], result[2], result[3], result[4],
-                                          pickle.loads(result[5]), pickle.loads(result[6]), pickle.loads((result[7])))
 
-        # model = pickle.loads(result[0])
-        # standard_scaler = pickle.loads(result[1])
-        # last_sample_id = result[2]
+        model_info = ModelInfo()
+        model_info = ModelInfo()
+        model_info.id = result[0]
+        model_info.name = result[1]
+        model_info.version = result[2]
+        model_info.date_of_create = result[3]
+        model_info.last_sample_id = result[4]
+        model_info.model = pickle.loads(result[5])
+        model_info.sc = pickle.loads(result[6])
+        model_info.pca = pickle.loads(result[7])
+
         conn.commit()
         conn.close()
         return model_info
@@ -162,12 +168,11 @@ class DatabaseSQLite:
         # return df
         cur = conn.cursor()
         # query = 'SELECT * FROM samples WHERE id > ' + str(last_sample_id)
-        cur.execute('SELECT * FROM samples WHERE id > (?)', (str(last_sample_id)))
+        cur.execute('SELECT * FROM samples WHERE id > (?)', (str(last_sample_id),))
         list_of_dicts = cur.fetchall()
         conn.commit()
         conn.close()
         return list_of_dicts
-
 
     def get_all_models_history_as_list_of_dicts(self) -> List[RowAsDictType]:
         conn = self.__create_connection()

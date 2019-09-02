@@ -6,9 +6,11 @@ import collections
 # import DatabaseSQLite
 import time
 
-from adapter_sqlite import AdapterDB
+from adapter_cassandra import AdapterDB
 
+from model_info import ModelInfo
 from client_redis import DatabaseRedis
+
 from typing import List, Dict, Union, Any, Tuple
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier
@@ -21,7 +23,7 @@ from sklearn.metrics import confusion_matrix, classification_report, accuracy_sc
 
 JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 # JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
-JSONType = Union[str, bytes, bytearray]
+# JSONType = Union[str, bytes, bytearray]
 RowAsDictType = Dict[str, Union[str, float, int]]
 
 
@@ -39,10 +41,7 @@ class ModelSGDClassifier:
         self.redis_DB.del_all_samples()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:
-        # print("create_model_and_save")
-
-        # df_original = pd.read_json(json_training_data) # TODO wywalic DATAFRAME
-        # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
+        print("create_model_and_save")
 
         start = time.time()
         x_test_std, x_train_std, y_test, y_train = self.create_train_and_test_sets(training_data_json)
@@ -50,13 +49,11 @@ class ModelSGDClassifier:
         print('Czas tworzenia zbiorów: {0}'.format((end-start)))
         # ppn = Perceptron(eta0=0.1, random_state=1, n_jobs=-1)
         # ppn.fit(X_train_std, y_train)
-
         # lr = LogisticRegression(C=1000.0, random_state=1, solver="lbfgs", n_jobs=-1, verbose=1)
         # lr.fit(X_train_std, y_train)
 
         # X_train_std, X_val_std, y_train, y_val = train_test_split(X_train_std, y_train, test_size=0.2, random_state=1)
         lr = SGDClassifier(loss='log', random_state=1, tol=1e-3, max_iter=1000, penalty='l1', alpha=1e-05, n_jobs=-1)
-        # lr = SGDClassifier(loss='log', verbose=1, n_jobs=-1, random_state=1, tol=1e-3, max_iter=1000, penalty='l2', alpha=1e-20)
         start = time.time()
         lr.fit(x_train_std, y_train)
         end = time.time()
@@ -78,19 +75,13 @@ class ModelSGDClassifier:
         print(confmat)
 
         self.model = lr
-        self.save_model()
+        # self.save_model() # todo tylko jak sqlite
 
     def create_train_and_test_sets(self, training_data_json) -> List[np.ndarray]:
         # print("create_train_and_test_sets")
         data_as_list_of_dicts = json.loads(training_data_json)
 
         list_of_dicts_of_samples = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(data_as_list_of_dicts)
-
-        # x = []
-        # y = []
-        # for s in array_of_dicts_of_samples:
-        #     x.append(list(s.values())[3:])
-        #     y.append(list(s.values())[:1][0])
 
         x = [list(s.values())[3:] for s in list_of_dicts_of_samples]
         y = [list(s.values())[:1][0] for s in list_of_dicts_of_samples]
@@ -128,9 +119,6 @@ class ModelSGDClassifier:
         for row_as_dict in list_of_dicts:
             samples.append(self.transform_dict_row_in_one_hot_vectors_dict(row_as_dict))
 
-        # df = pd.DataFrame(samples)
-        # df = df.fillna(0)
-
         return samples
 
     def transform_dict_row_in_one_hot_vectors_dict(self, row_as_dict: RowAsDictType) -> RowAsDictType:
@@ -145,15 +133,8 @@ class ModelSGDClassifier:
         # print('create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns')
 
         new_dict = dict.fromkeys(self.required_column_names_list, 0)
-
-        # new_dict['Sale'] = old_dict['Sale']
-        # new_dict['SalesAmountInEuro'] = old_dict['SalesAmountInEuro']
-        # new_dict['time_delay_for_conversion'] = old_dict[
-        #     'time_delay_for_conversion']
-        # new_dict['click_timestamp'] = old_dict['click_timestamp']
-        # new_dict['nb_clicks_1week'] = old_dict['nb_clicks_1week']
-
         new_dict['sale'] = int(old_dict['sale'])
+
         new_dict['sales_amount_in_euro'] = old_dict['sales_amount_in_euro']
         new_dict['time_delay_for_conversion'] = int(old_dict[
             'time_delay_for_conversion'])
@@ -166,10 +147,11 @@ class ModelSGDClassifier:
         # print('set_values_to_one_hot_vectors_columns')
 
         for column_number, (column_name, cell_value) in enumerate(old_dict.items()):
-            if column_number > 2:
+            if column_number > 2: # skip y rows (sale,  sales_amount_in_euro,time_delay_for_conversion)
                 transformed_column_name = column_name + '_' + str(cell_value)
                 if transformed_column_name in self.required_column_names_list:
                     new_dict[transformed_column_name] = 1
+
 
         return new_dict
 
@@ -184,60 +166,42 @@ class ModelSGDClassifier:
         result = {}
         for k, v in dict_to_change.items():
             if v is None:
-                result[k] = value_for_none #TODO zmienić aby wszystko w dataframeach i slownikach bylo str
+                result[k] = value_for_none #TODO zmienić aby wszystko w dataframeach i slownikach bylo str, ale po co? hm
             else:
                 result[k] = v
         return result
 
     def predict(self, sample_json: JSONType) -> Tuple[np.ndarray, np.ndarray]:
-
-        transformed_sample_dict = list(self.transform_dict_row_in_one_hot_vectors_dict(json.loads(sample_json)).values())
-
-        transformed_sample_dict = transformed_sample_dict[3:]  # remove sales features from sample
-        transformed_sample_dict = self.pca.transform([transformed_sample_dict])
-        transformed_sample_dict = self.sc.transform(transformed_sample_dict)
-        transformed_sample_dict = normalize(transformed_sample_dict, norm='l2')
-
-        probability = self.model.predict_proba(transformed_sample_dict).ravel()
-        y = self.model.predict(transformed_sample_dict)
-
-
         sample_dict = json.loads(sample_json)
+
+        transformed_sample_list_of_values = list(self.transform_dict_row_in_one_hot_vectors_dict(sample_dict).values())
+
+        transformed_sample_list_of_values = transformed_sample_list_of_values[3:]  # remove sale features from sample
+        transformed_sample_list_of_values = self.pca.transform([transformed_sample_list_of_values])
+        transformed_sample_list_of_values = self.sc.transform(transformed_sample_list_of_values)
+        transformed_sample_list_of_values = normalize(transformed_sample_list_of_values, norm='l2')
+
+        probability = self.model.predict_proba(transformed_sample_list_of_values).ravel()
+        y = self.model.predict(transformed_sample_list_of_values)
+
+
         sample_dict['predicted'] = str(y[0])
         sample_dict['probabilities'] = list(probability)
         sample_json = json.dumps(sample_dict)
 
-
         self.redis_DB.rpush_sample(sample_json)
-
         self.db.insert_sample(sample_dict) # todo usunąć
-        # db = DatabaseSQLite.DatabaseSQLite()
-        # db.add_row_from_json(sample_json=sample_json)
 
         return y, probability
 
     def update_model(self) -> None:
-        # db = DatabaseSQLite.DatabaseSQLite()
-        # df_samples_to_update = db.get_samples_to_update_model_as_df()
-        # list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df_samples_to_update)
-
         samples_list_of_dicts = self.db.get_samples_for_update_model_as_list_of_dicts(self.last_sample_id)
-        # list_of_dicts_of_samples = self.transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
         samples_list_of_dicts = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
-        # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
-
-        # x = []
-        # y = []
-        # for s in array_of_dicts_of_samples:
-        #     x.append(list(s.values())[3:])
-        #     y.append(list(s.values())[:1][0])
 
         x = [list(s.values())[3:] for s in samples_list_of_dicts]
         y = [list(s.values())[:1][0] for s in samples_list_of_dicts]
         x = np.array(x)
         y = np.array(y)
-        # x = df_one_hot_vectors.iloc[:, 3:].values
-        # y = df_one_hot_vectors['Sale'].values.ravel()
 
         x = self.pca.transform(x)
         adasyn = ADASYN(random_state=1)
@@ -247,26 +211,35 @@ class ModelSGDClassifier:
         y = np.array([int(i) for i in y])
 
         self.model.partial_fit(x, y, classes=np.array([0, 1]))
-        self.save_model()
+        # self.save_model() # todo zostawić tylko przy używaniu sqlite
 
-        self.last_sample_id = db.get_last_sample_id()
+        self.last_sample_id = samples_list_of_dicts[-1]['id'] #todo sprawdzić czy działa
 
         print("LOG: updating model DONE")
 
-    def transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(self, samples_list_of_jsons) -> List:
-        # print("transform_df_into_df_with_one_hot_vectors")
-        # data_as_dict = json.loads(df_to_transform.T.to_json())
-        samples = []
-        for sample_as_json in samples_list_of_jsons:
-            samples.append(self.transform_dict_row_in_one_hot_vectors_dict(json.loads(sample_as_json)))
-
-        return samples
+    # def transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(self, samples_list_of_jsons) -> List:
+    #     samples = []
+    #     for sample_as_json in samples_list_of_jsons:
+    #         samples.append(self.transform_dict_row_in_one_hot_vectors_dict(json.loads(sample_as_json)))
+    #
+    #     return samples
 
     def save_model(self) -> None:
-        pass
         # if self.model is None:
         #     print("LOG: " + "There is not model available. Must be created.")
 
+
+        # zapisywanie modelu do sqlite
+        model_info = ModelInfo()
+        model_info.name = 'SGDClassifier'
+        model_info.version = 0 #todo
+        model_info.date_of_create = time.time()
+        model_info.last_sample_id = self.last_sample_id
+        model_info.model = self.model
+        model_info.sc = self.sc
+        model_info.pca = self.pca
+        self.db.insert_model(model_info)
+        print("LOG: saving model DONE")
 
         # zapisywanie modelu do pliku
         # current_dir = os.path.dirname(__file__)
@@ -311,18 +284,26 @@ class ModelSGDClassifier:
         # print("LOG: saving model DONE")
 
     def load_model(self) -> None:
-        pass
+        # wczytywanie z sqlite
+
+        model_info = self.db.get_last_model_info()
+        self.model = model_info.model
+        self.sc = model_info.sc
+        self.pca = model_info.pca
+
+        print("LOG: " + "Model loaded.")
+
+        # wczytywanie z pliku
         # current_dir = os.path.dirname(__file__)
         # self.model = pickle.load(open(os.path.join(current_dir, 'pickle_objects', 'SGDClassifier.pkl'), mode='rb'))
         # print("LOG: " + "model load from directory: " + current_dir + '\SGDClassifier.pkl')
 
-
+        # wczytywanie z cassandry
         # db = CassandraClient()
         # model_history = db.get_last_model_history()
         # self.model = pickle.loads(model_history.model)
         # self.sc = pickle.loads(model_history.standard_scaler)
         # self.pca = pickle.loads(model_history.pca_one+model_history.pca)
-
 
     def test_predict(self, n_of_samples):
         print("Testing...")
@@ -387,30 +368,4 @@ class ModelSGDClassifier:
 
 if __name__ == '__main__':
     m = ModelSGDClassifier()
-    db = CassandraClient()
 
-    db.delete_all_samples()
-    #
-    # m.test_train(n_samples_for_training=1000)
-    # m.test_predict(10)
-    # print(len(db.get_samples_for_update_model_as_list_of_dicts(1)))
-    #
-    # print((db.get_samples_for_update_model_as_list_of_dicts(5)))
-    # print((db.get_all_samples_as_list_of_dicts()[0]['system.totimestamp(id)']))
-
-    print(len(db.get_all_samples_as_list_of_dicts()))
-    m.test_train(n_samples_for_training=1000)
-    m.test_predict(1000)
-    print(len(db.get_all_samples_as_list_of_dicts()))
-    m.update_model()
-    print((db.get_last_sample_id()))
-    print(m.last_sample_id)
-    m.test_predict(2000)
-    m.update_model()
-    print(len(db.get_all_samples_as_list_of_dicts()))
-
-    # m.update_model()
-    # uuid_sample = db.get_last_sample_uuid()
-    # samples = db.get_samples_for_update_model_as_list_of_dicts(uuid_sample)
-    # print(type(samples))
-    # print((samples[0]))
