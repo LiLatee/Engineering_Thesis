@@ -1,5 +1,5 @@
 from redis_client import set_model_version
-from SGDClassifier import ModelSGDClassifier
+from model_SGDClassifier import ModelSGDClassifier
 
 class MLModel:
 

@@ -3,7 +3,7 @@ import websockets
 import json
 import time
 from redis_client import RedisClient
-from cass_client import CassandraClient
+from client_cass import CassandraClient
 from evaluation_metrics import is_prediction_correct, get_roc_auc_score
 from typing import Union, Any
 

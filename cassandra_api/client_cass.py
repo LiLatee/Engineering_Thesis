@@ -9,7 +9,6 @@ from cqlengine.connection import setup
 from typing import List, Dict, Union
 from cassandra.query import dict_factory
 
-
 RowAsDictType = Dict[str, Union[str, float, int]]
 
 class Sample(Model):
@@ -50,6 +49,8 @@ class CassandraClient:
         self.SAMPLE_TABLE = 'sample'
         self.MODEL_HISTORY_TABLE = 'model_history'
         self.LAST_SAMPLE_ID = 1
+
+        self.setup_cassandra()
 
         self.session = self.get_session()
         # self.restart_cassandra()

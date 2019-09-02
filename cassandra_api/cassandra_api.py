@@ -1,5 +1,5 @@
 from flask import Flask, request
-from cass_client import CassandraClient
+from client_cass import CassandraClient
 import json
 
 app = Flask(__name__)
@@ -10,7 +10,6 @@ cass = CassandraClient()
 def hello_world():
     return 'Hello, World!'
 
-
 @app.route('/samples', methods=['GET'])
 def get_all_samples_as_list_of_dicts():
     return str(cass.get_all_samples_as_list_of_dicts())
@@ -18,8 +17,9 @@ def get_all_samples_as_list_of_dicts():
 
 @app.route('/samples-for-update', methods=['GET'])
 def get_samples_for_update_model():
-    id = request.args.get('last_sample_id')
-    return str(cass.get_samples_for_update_model_as_list_of_dicts(id))
+    id = request.args.get('last_sample_id', type=int)
+    print(id)
+    return json.dumps(cass.get_samples_for_update_model_as_list_of_dicts(id))
 
 
 @app.route('/last_sample_id', methods=['GET'])
@@ -34,11 +34,9 @@ def delete_all_samples():
 
 @app.route('/samples', methods=['POST'])
 def insert_sample():
-    sample_json = request.get_json()
-    sample_dict = json.loads(sample_json)
+    sample_dict = request.json
     cass.insert_sample(sample_dict)
-    return 'deleted'
-
+    return 'inserted'
 
 @app.route('/restart',)
 def restart():

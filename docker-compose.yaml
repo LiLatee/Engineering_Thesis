@@ -1,7 +1,7 @@
 version: '3'
 
 volumes:
-  dbdata:
+  sqlite:
 
 services:
   cassandra:
@@ -34,7 +34,7 @@ services:
     build: ./prediction_server
     volumes:
       - ./prediction_server:/usr/src/app
-      - "dbdata:/var/lib/ggg"
+      - "sqlite:/data"
     depends_on:
       - cassandra
       - cassandra_api

@@ -6,9 +6,9 @@ import collections
 # import DatabaseSQLite
 import time
 
-from cass_client import CassandraClient
+from adapter_sqlite import AdapterDB
 
-from DatabaseRedis import DatabaseRedis
+from client_redis import DatabaseRedis
 from typing import List, Dict, Union, Any, Tuple
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier
@@ -35,7 +35,7 @@ class ModelSGDClassifier:
         self.last_sample_id = None
         self.required_column_names_list: List[str] = self.read_required_column_names()
         self.redis_DB = DatabaseRedis()
-        self.cassandra_DB = CassandraClient()
+        self.db = AdapterDB()
         self.redis_DB.del_all_samples()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:
@@ -210,7 +210,7 @@ class ModelSGDClassifier:
 
         self.redis_DB.rpush_sample(sample_json)
 
-        self.cassandra_DB.insert_sample(sample_dict) # todo usunąć
+        self.db.insert_sample(sample_dict) # todo usunąć
         # db = DatabaseSQLite.DatabaseSQLite()
         # db.add_row_from_json(sample_json=sample_json)
 
@@ -221,7 +221,7 @@ class ModelSGDClassifier:
         # df_samples_to_update = db.get_samples_to_update_model_as_df()
         # list_of_dicts_of_samples = self.transform_df_into_list_of_one_hot_vectors_dicts(df_samples_to_update)
 
-        samples_list_of_dicts = self.cassandra_DB.get_samples_for_update_model_as_list_of_dicts(self.last_sample_id)
+        samples_list_of_dicts = self.db.get_samples_for_update_model_as_list_of_dicts(self.last_sample_id)
         # list_of_dicts_of_samples = self.transform_list_of_jsons_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
         samples_list_of_dicts = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
         # df_one_hot_vectors = df_one_hot_vectors.dropna(axis=0)  # usuwanie wierszy, które zawierają null
