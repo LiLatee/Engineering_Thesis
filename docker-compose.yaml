@@ -37,21 +37,21 @@ services:
       - "sqlite:/data"
     depends_on:
       - cassandra
-      - cassandra_api
-    command: ["./wait-for-it.sh", "cassandra:9042", "cassandra_api:8764", "--", "python", "prediction_api.py"]
+#      - cassandra_api
+    command: ["./wait-for-it.sh", "cassandra:9042", "cassandra_api-not-used:8764", "--", "python", "prediction_api.py"]
     ports:
       - 5000:5000
 
-  cassandra_api:
-    container_name: cassandra_api
-    build: ./cassandra_api
-    volumes:
-      - ./cassandra_api:/usr/src/app
-    depends_on:
-      - cassandra
-    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "cassandra_api.py"]
-    ports:
-      - 8764:8764
+#  cassandra_api:
+#    container_name: cassandra_api-not-used
+#    build: cassandra_api-not-used
+#    volumes:
+#      - ./cassandra_api-not-used:/usr/src/app
+#    depends_on:
+#      - cassandra
+#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "cassandra_api-not-used.py"]
+#    ports:
+#      - 8764:8764
 
 #  worker:
 #    image: engineeringthesis_prediction_server:latest
@@ -74,6 +74,7 @@ services:
     build: ./evaluation_server
     volumes:
       - ./evaluation_server:/usr/src/app
+      - "sqlite:/data"
     depends_on:
       - cassandra
     command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "evaluation_server.py"]

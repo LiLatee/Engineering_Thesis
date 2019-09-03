@@ -7,9 +7,9 @@ def get_num_of_good_predictions(samples: List[bytes]) -> int:
     predicted = 0
     for sample in samples:
         sample_json = sample_bytes_to_json(sample)
-        print(sample_json.get("Sale"))
+        print(sample_json.get("sale"))
         print(sample_json.get("predicted"))
-        if str(sample_json.get("Sale")) == str(sample_json.get("predicted")):
+        if str(sample_json.get("sale")) == str(sample_json.get("predicted")):
             predicted += 1
     return predicted
 

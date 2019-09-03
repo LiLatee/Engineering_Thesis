@@ -5,7 +5,7 @@ from model_info import ModelInfo
 
 class AdapterDB:
     def __init__(self):
-        self.sqlite = DatabaseSQLite('/data/sqlite3.db')
+        self.sqlite = DatabaseSQLite()
 
     def get_samples_for_update_model_as_list_of_dicts(self, last_sample_id):
         return self.sqlite.get_samples_to_update_model_as_list_of_dicts(last_sample_id)
@@ -14,7 +14,7 @@ class AdapterDB:
         return self.sqlite.get_last_sample_id()
 
     def insert_sample(self, sample_dict):
-        self.sqlite.insert_sample_from_dict(sample_dict=sample_dict)
+        self.sqlite.insert_sample_as_dict(sample_dict=sample_dict)
 
     def insert_model(self, model_info: ModelInfo):
         self.sqlite.insert_ModelInfo(model_info)

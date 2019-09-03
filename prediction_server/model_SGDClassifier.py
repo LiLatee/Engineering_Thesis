@@ -6,7 +6,9 @@ import collections
 # import DatabaseSQLite
 import time
 
-from adapter_cassandra import AdapterDB
+# from adapter_cassandra import AdapterDB
+from client_cass import CassandraClient
+from client_SQLite import DatabaseSQLite
 
 from model_info import ModelInfo
 from client_redis import DatabaseRedis
@@ -37,7 +39,10 @@ class ModelSGDClassifier:
         self.last_sample_id = None
         self.required_column_names_list: List[str] = self.read_required_column_names()
         self.redis_DB = DatabaseRedis()
-        self.db = AdapterDB()
+        # self.db = AdapterDB()
+        # self.db = CassandraClient()
+        self.db = DatabaseSQLite()
+
         self.redis_DB.del_all_samples()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:
@@ -186,11 +191,11 @@ class ModelSGDClassifier:
 
 
         sample_dict['predicted'] = str(y[0])
-        sample_dict['probabilities'] = list(probability)
+        sample_dict['probabilities'] = json.dumps(list(probability))
         sample_json = json.dumps(sample_dict)
 
         self.redis_DB.rpush_sample(sample_json)
-        self.db.insert_sample(sample_dict) # todo usunąć
+        # self.db.insert_sample_as_dict(sample_dict) # todo usunąć
 
         return y, probability
 
@@ -238,7 +243,7 @@ class ModelSGDClassifier:
         model_info.model = self.model
         model_info.sc = self.sc
         model_info.pca = self.pca
-        self.db.insert_model(model_info)
+        self.db.insert_ModelInfo(model_info)
         print("LOG: saving model DONE")
 
         # zapisywanie modelu do pliku

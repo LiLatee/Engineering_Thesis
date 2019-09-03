@@ -34,7 +34,7 @@ def delete_all_samples():
 @app.route('/samples', methods=['POST'])
 def insert_sample():
     sample_dict = request.json
-    cass.insert_sample(sample_dict)
+    cass.insert_sample_as_dict(sample_dict)
     return 'inserted'
 
 @app.route('/restart',)
