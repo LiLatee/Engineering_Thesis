@@ -2,14 +2,10 @@ import pandas as pd
 import numpy as np
 import json
 import collections
-
-# import DatabaseSQLite
 import time
 
-# from adapter_cassandra import AdapterDB
 from client_cass import CassandraClient
 from client_SQLite import DatabaseSQLite
-
 from model_info import ModelInfo
 from client_redis import DatabaseRedis
 
@@ -21,11 +17,9 @@ from imblearn.over_sampling import ADASYN
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, balanced_accuracy_score
 
-# from rq import Queue
-
-JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 # JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
-# JSONType = Union[str, bytes, bytearray]
+JSONType = Union[str, bytes, bytearray]
+
 RowAsDictType = Dict[str, Union[str, float, int]]
 
 
@@ -34,14 +28,12 @@ class ModelSGDClassifier:
     def __init__(self) -> None:
         self.model: SGDClassifier = None
         self.sc: StandardScaler = None
-        # self.df_original: pd.DataFrame = None
-        self.pca = None
-        self.last_sample_id = None
+        self.pca: PCA = None
+        self.last_sample_id: int = None
         self.required_column_names_list: List[str] = self.read_required_column_names()
-        self.redis_DB = DatabaseRedis()
-        # self.db = AdapterDB()
-        # self.db = CassandraClient()
-        self.db = DatabaseSQLite()
+        self.redis_DB: DatabaseRedis = DatabaseRedis()
+        # self.db: CassandraClient = CassandraClient()
+        self.db: DatabaseSQLite = DatabaseSQLite()
 
         self.redis_DB.del_all_samples()
 
@@ -82,16 +74,11 @@ class ModelSGDClassifier:
         self.model = lr
         # self.save_model() # todo tylko jak sqlite
 
-    def create_train_and_test_sets(self, training_data_json) -> List[np.ndarray]:
+    def create_train_and_test_sets(self, training_data_json: JSONType) -> List[np.ndarray]:
         # print("create_train_and_test_sets")
         data_as_list_of_dicts = json.loads(training_data_json)
 
-        list_of_dicts_of_samples = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(data_as_list_of_dicts)
-
-        x = [list(s.values())[3:] for s in list_of_dicts_of_samples]
-        y = [list(s.values())[:1][0] for s in list_of_dicts_of_samples]
-        x = np.array(x)
-        y = np.array(y)
+        x, y = self.split_data_to_x_and_y(data_as_list_of_dicts)
 
         # x = df_one_hot_vectors.iloc[:, 3:].values
         # y = df_one_hot_vectors.iloc[:, :1].values.ravel()  # tutaj powinny być chyba 3 kolumny
@@ -118,7 +105,15 @@ class ModelSGDClassifier:
 
         return [x_test_std, x_train_std, y_test, y_train]
 
-    def transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(self, list_of_dicts: List[RowAsDictType])-> List[RowAsDictType]:
+    def split_data_to_x_and_y(self, data_as_list_of_dicts: List[RowAsDictType]) -> Tuple[np.ndarray, np.ndarray]:
+        list_of_dicts_of_samples = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(data_as_list_of_dicts)
+        x = [list(s.values())[3:] for s in list_of_dicts_of_samples]
+        y = [list(s.values())[:1][0] for s in list_of_dicts_of_samples]
+        x = np.array(x)
+        y = np.array(y)
+        return x, y
+
+    def transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(self, list_of_dicts: List[RowAsDictType]) -> List[RowAsDictType]:
         # print("transform_df_into_df_with_one_hot_vectors")
         samples = []
         for row_as_dict in list_of_dicts:
@@ -137,7 +132,7 @@ class ModelSGDClassifier:
     def create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns(self, old_dict: RowAsDictType) -> RowAsDictType:
         # print('create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns')
 
-        new_dict = dict.fromkeys(self.required_column_names_list, 0)
+        new_dict: RowAsDictType = dict.fromkeys(self.required_column_names_list, 0)
         new_dict['sale'] = int(old_dict['sale'])
 
         new_dict['sales_amount_in_euro'] = old_dict['sales_amount_in_euro']
@@ -156,7 +151,6 @@ class ModelSGDClassifier:
                 transformed_column_name = column_name + '_' + str(cell_value)
                 if transformed_column_name in self.required_column_names_list:
                     new_dict[transformed_column_name] = 1
-
 
         return new_dict
 
@@ -189,7 +183,6 @@ class ModelSGDClassifier:
         probability = self.model.predict_proba(transformed_sample_list_of_values).ravel()
         y = self.model.predict(transformed_sample_list_of_values)
 
-
         sample_dict['predicted'] = str(y[0])
         sample_dict['probabilities'] = json.dumps(list(probability))
         sample_json = json.dumps(sample_dict)
@@ -200,13 +193,8 @@ class ModelSGDClassifier:
         return y, probability
 
     def update_model(self) -> None:
-        samples_list_of_dicts = self.db.get_samples_for_update_model_as_list_of_dicts(self.last_sample_id)
-        samples_list_of_dicts = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(samples_list_of_dicts)
-
-        x = [list(s.values())[3:] for s in samples_list_of_dicts]
-        y = [list(s.values())[:1][0] for s in samples_list_of_dicts]
-        x = np.array(x)
-        y = np.array(y)
+        samples_list_of_dicts = self.db.get_samples_to_update_model_as_list_of_dicts(self.last_sample_id)
+        x, y = self.split_data_to_x_and_y(samples_list_of_dicts)
 
         x = self.pca.transform(x)
         adasyn = ADASYN(random_state=1)
