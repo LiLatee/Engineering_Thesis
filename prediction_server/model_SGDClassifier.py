@@ -29,13 +29,13 @@ class ModelSGDClassifier:
         self.model: SGDClassifier = None
         self.sc: StandardScaler = None
         self.pca: PCA = None
-        self.last_sample_id: int = None
+        self.last_sample_id: int = -1
         self.required_column_names_list: List[str] = self.read_required_column_names()
         self.redis_DB: DatabaseRedis = DatabaseRedis()
         # self.db: CassandraClient = CassandraClient()
         self.db: DatabaseSQLite = DatabaseSQLite()
 
-        self.redis_DB.del_all_samples()
+        # self.redis_DB.del_all_samples()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:
         print("create_model_and_save")
@@ -156,7 +156,7 @@ class ModelSGDClassifier:
 
     @staticmethod
     def read_required_column_names() -> List[str]:
-        required_column_name_file = open('required_column_names_list.txt', 'r')
+        required_column_name_file = open('/home/marcin/PycharmProjects/Engineering_Thesis/prediction_server/required_column_names_list.txt', 'r')
         required_column_names_list = required_column_name_file.read().splitlines()
         return required_column_names_list
 
@@ -188,13 +188,14 @@ class ModelSGDClassifier:
         sample_json = json.dumps(sample_dict)
 
         self.redis_DB.rpush_sample(sample_json)
-        # self.db.insert_sample_as_dict(sample_dict) # todo usunąć
+        self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
 
         return y, probability
 
     def update_model(self) -> None:
         samples_list_of_dicts = self.db.get_samples_to_update_model_as_list_of_dicts(self.last_sample_id)
         x, y = self.split_data_to_x_and_y(samples_list_of_dicts)
+
 
         x = self.pca.transform(x)
         adasyn = ADASYN(random_state=1)
@@ -334,7 +335,7 @@ class ModelSGDClassifier:
         df = pd.read_csv('/home/marcin/PycharmProjects/Engineering_Thesis/data_provider/data/CriteoSearchData-sorted-no-duplicates.csv',
                          sep='\t',
                          nrows=n_samples_for_training,
-                         skiprows=np.arange(1,50001),
+                         skiprows=np.arange(1, 50001),
                          header=0,
                          low_memory=False)
 
@@ -344,7 +345,7 @@ class ModelSGDClassifier:
         start = time.time()
         self.create_model_and_save(training_data_json)
         end = time.time()
-        print('CALOSC TRENIG: {0}'.format((end-start)))
+        print('CALOSC TRENINGU: {0}'.format((end-start)))
         print("DONE")
 
 
@@ -361,4 +362,6 @@ class ModelSGDClassifier:
 
 if __name__ == '__main__':
     m = ModelSGDClassifier()
+    m.test_train(1000)
+    m.test_predict(100)
 

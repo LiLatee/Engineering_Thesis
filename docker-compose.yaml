@@ -38,7 +38,7 @@ services:
     depends_on:
       - cassandra
 #      - cassandra_api
-    command: ["./wait-for-it.sh", "cassandra:9042", "cassandra_api-not-used:8764", "--", "python", "prediction_api.py"]
+    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "prediction_api.py"]
     ports:
       - 5000:5000
 
