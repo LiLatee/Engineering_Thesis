@@ -4,6 +4,7 @@ import json
 import collections
 import time
 
+import data_preprocessing as dp
 from client_cass import CassandraClient
 from client_SQLite import DatabaseSQLite
 from model_info import ModelInfo
@@ -19,7 +20,6 @@ from sklearn.metrics import confusion_matrix, classification_report, accuracy_sc
 
 # JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 JSONType = Union[str, bytes, bytearray]
-
 RowAsDictType = Dict[str, Union[str, float, int]]
 
 
@@ -30,7 +30,7 @@ class ModelSGDClassifier:
         self.sc: StandardScaler = None
         self.pca: PCA = None
         self.last_sample_id: int = -1
-        self.required_column_names_list: List[str] = self.read_required_column_names()
+        self.required_column_names_list: List[str] = dp.read_required_column_names()
         self.redis_DB: DatabaseRedis = DatabaseRedis()
         # self.db: CassandraClient = CassandraClient()
         self.db: DatabaseSQLite = DatabaseSQLite()
@@ -41,7 +41,7 @@ class ModelSGDClassifier:
         print("create_model_and_save")
 
         start = time.time()
-        x_test_std, x_train_std, y_test, y_train = self.create_train_and_test_sets(training_data_json)
+        self.pca, self.sc, x_test_std, x_train_std, y_test, y_train = dp.create_train_and_test_sets(training_data_json)
         end = time.time()
         print('Czas tworzenia zbiorów: {0}'.format((end-start)))
         # ppn = Perceptron(eta0=0.1, random_state=1, n_jobs=-1)
@@ -74,106 +74,10 @@ class ModelSGDClassifier:
         self.model = lr
         # self.save_model() # todo tylko jak sqlite
 
-    def create_train_and_test_sets(self, training_data_json: JSONType) -> List[np.ndarray]:
-        # print("create_train_and_test_sets")
-        data_as_list_of_dicts = json.loads(training_data_json)
-
-        x, y = self.split_data_to_x_and_y(data_as_list_of_dicts)
-
-        # x = df_one_hot_vectors.iloc[:, 3:].values
-        # y = df_one_hot_vectors.iloc[:, :1].values.ravel()  # tutaj powinny być chyba 3 kolumny
-
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=1, stratify=y)
-
-        print('Liczba etykiet w zbiorze y:', np.bincount(y))
-        print('Liczba etykiet w zbiorze y_train:', np.bincount(y_train))
-        print('Liczba etykiet w zbiorze y_test:', np.bincount(y_test))
-
-        self.pca = PCA(n_components=500, random_state=1)
-        x_train = self.pca.fit_transform(x_train)
-        x_test = self.pca.transform(x_test)
-
-        adasyn = ADASYN(random_state=1)
-        x_train, y_train = adasyn.fit_resample(x_train, y_train)
-
-        self.sc = StandardScaler()
-        self.sc.fit(x_train)
-        x_train_std = self.sc.transform(x_train)
-        x_train_std = normalize(x_train_std, norm='l2')
-        x_test_std = self.sc.transform(x_test)
-        x_test_std = normalize(x_test_std, norm='l2')
-
-        return [x_test_std, x_train_std, y_test, y_train]
-
-    def split_data_to_x_and_y(self, data_as_list_of_dicts: List[RowAsDictType]) -> Tuple[np.ndarray, np.ndarray]:
-        list_of_dicts_of_samples = self.transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(data_as_list_of_dicts)
-        x = [list(s.values())[3:] for s in list_of_dicts_of_samples]
-        y = [list(s.values())[:1][0] for s in list_of_dicts_of_samples]
-        x = np.array(x)
-        y = np.array(y)
-        return x, y
-
-    def transform_list_of_dicts_to_list_of_one_hot_vectors_dicts(self, list_of_dicts: List[RowAsDictType]) -> List[RowAsDictType]:
-        # print("transform_df_into_df_with_one_hot_vectors")
-        samples = []
-        for row_as_dict in list_of_dicts:
-            samples.append(self.transform_dict_row_in_one_hot_vectors_dict(row_as_dict))
-
-        return samples
-
-    def transform_dict_row_in_one_hot_vectors_dict(self, row_as_dict: RowAsDictType) -> RowAsDictType:
-        # print('transform_json_row_in_one_hot_vectors_dict')
-
-        transformed_row_as_dict = self.create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns(row_as_dict)
-        transformed_row_as_dict = self.set_values_to_one_hot_vectors_columns(row_as_dict, transformed_row_as_dict)
-
-        return transformed_row_as_dict
-
-    def create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns(self, old_dict: RowAsDictType) -> RowAsDictType:
-        # print('create_dict_as_transformed_row_and_set_no_one_hot_vectors_columns')
-
-        new_dict: RowAsDictType = dict.fromkeys(self.required_column_names_list, 0)
-        new_dict['sale'] = int(old_dict['sale'])
-
-        new_dict['sales_amount_in_euro'] = old_dict['sales_amount_in_euro']
-        new_dict['time_delay_for_conversion'] = int(old_dict[
-            'time_delay_for_conversion'])
-        new_dict['click_timestamp'] = int(old_dict['click_timestamp'])
-        new_dict['nb_clicks_1week'] = int(old_dict['nb_clicks_1week'])
-
-        return new_dict
-
-    def set_values_to_one_hot_vectors_columns(self, old_dict: RowAsDictType, new_dict: RowAsDictType) -> RowAsDictType:
-        # print('set_values_to_one_hot_vectors_columns')
-
-        for column_number, (column_name, cell_value) in enumerate(old_dict.items()):
-            if column_number > 2: # skip y rows (sale,  sales_amount_in_euro,time_delay_for_conversion)
-                transformed_column_name = column_name + '_' + str(cell_value)
-                if transformed_column_name in self.required_column_names_list:
-                    new_dict[transformed_column_name] = 1
-
-        return new_dict
-
-    @staticmethod
-    def read_required_column_names() -> List[str]:
-        required_column_name_file = open('/home/marcin/PycharmProjects/Engineering_Thesis/prediction_server/required_column_names_list.txt', 'r')
-        required_column_names_list = required_column_name_file.read().splitlines()
-        return required_column_names_list
-
-    @staticmethod
-    def replace_none_values_in_dict(dict_to_change: RowAsDictType, value_for_none):
-        result = {}
-        for k, v in dict_to_change.items():
-            if v is None:
-                result[k] = value_for_none #TODO zmienić aby wszystko w dataframeach i slownikach bylo str, ale po co? hm
-            else:
-                result[k] = v
-        return result
-
     def predict(self, sample_json: JSONType) -> Tuple[np.ndarray, np.ndarray]:
         sample_dict = json.loads(sample_json)
 
-        transformed_sample_list_of_values = list(self.transform_dict_row_in_one_hot_vectors_dict(sample_dict).values())
+        transformed_sample_list_of_values = list(dp.transform_dict_row_in_one_hot_vectors_dict(sample_dict).values())
 
         transformed_sample_list_of_values = transformed_sample_list_of_values[3:]  # remove sale features from sample
         transformed_sample_list_of_values = self.pca.transform([transformed_sample_list_of_values])
@@ -194,12 +98,10 @@ class ModelSGDClassifier:
 
     def update_model(self) -> None:
         samples_list_of_dicts = self.db.get_samples_to_update_model_as_list_of_dicts(self.last_sample_id)
-        x, y = self.split_data_to_x_and_y(samples_list_of_dicts)
-
-
+        x, y = dp.split_data_to_x_and_y(samples_list_of_dicts)
         x = self.pca.transform(x)
         adasyn = ADASYN(random_state=1)
-        x, y = adasyn.fit_resample(x, y) #TODO blad jak wszystkie probki sa z jedne klasy
+        x, y = adasyn.fit_resample(x, y) #TODO blad jak wszystkie probki sa z jednej klasy
         x = self.sc.transform(x)
         x = normalize(x, norm='l2')
         y = np.array([int(i) for i in y])
@@ -279,7 +181,6 @@ class ModelSGDClassifier:
 
     def load_model(self) -> None:
         # wczytywanie z sqlite
-
         model_info = self.db.get_last_model_info()
         self.model = model_info.model
         self.sc = model_info.sc
@@ -299,66 +200,6 @@ class ModelSGDClassifier:
         # self.sc = pickle.loads(model_history.standard_scaler)
         # self.pca = pickle.loads(model_history.pca_one+model_history.pca)
 
-    def test_predict(self, n_of_samples):
-        print("Testing...")
-        df = pd.read_csv('/home/marcin/PycharmProjects/Engineering_Thesis/data_provider/data/CriteoSearchData-sorted-no-duplicates.csv',
-                         sep='\t',
-                         nrows=n_of_samples,
-                         low_memory=False)
-
-
-        y_pred = np.array([])
-        y_test = np.array([])
-
-        for id, row in df.iterrows():
-            y, prob = self.predict(row.to_json())
-            y_test = np.append(y_test, row['sale'])
-            y_pred = np.append(y_pred, y)
-
-
-        # end = time.time()
-        # print('testing: {0}'.format((end-start)))
-        # print(collections.Counter(y_test))
-        # print(collections.Counter(y_pred))
-        #
-        print("LOG: testing model DONE")
-        print('balanced_accuracy_score: {0}'.format(balanced_accuracy_score(y_test, y_pred)))
-        print('accuracy_score: {0}'.format(accuracy_score(y_test, y_pred)))
-
-        print('Nieprawidłowo sklasyfikowane próbki: %d' % (y_test != y_pred).sum())
-
-        print('classification_report :\n', classification_report(y_test, y_pred))
-        confmat = confusion_matrix(y_true=y_test, y_pred=y_pred)
-        print(confmat)
-
-    def test_train(self, n_samples_for_training: int) -> None:
-        df = pd.read_csv('/home/marcin/PycharmProjects/Engineering_Thesis/data_provider/data/CriteoSearchData-sorted-no-duplicates.csv',
-                         sep='\t',
-                         nrows=n_samples_for_training,
-                         skiprows=np.arange(1, 50001),
-                         header=0,
-                         low_memory=False)
-
-        training_data_json = df.to_json(orient='records')
-
-        print("Training...")
-        start = time.time()
-        self.create_model_and_save(training_data_json)
-        end = time.time()
-        print('CALOSC TRENINGU: {0}'.format((end-start)))
-        print("DONE")
-
-
-        # tests = []
-        # for id, row in df[1001:2000].iterrows():
-        #     transformed_x = self.transform_json_row_in_one_hot_vectors_list_of_values(row.to_json())
-        #     transformed_x = transformed_x[3:]  # remove sales features from sample
-        #     tests.append(transformed_x)
-        # tests = np.asarray(tests)
-        # tests = self.sc.transform(tests)
-        # y = self.model.predict(tests)
-        # probability = self.model.predict_proba(tests)
-        # print("y: %s\t probability: %s" % (str(y), str(probability)))
 
 if __name__ == '__main__':
     m = ModelSGDClassifier()

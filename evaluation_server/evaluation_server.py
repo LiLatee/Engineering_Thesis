@@ -2,17 +2,17 @@ import asyncio
 import websockets
 import json
 import time
-from redis_client import RedisClient
+from client_redis import DatabaseRedis
 from client_cass import CassandraClient
 from client_SQLite import DatabaseSQLite
-from evaluation_metrics import is_prediction_correct, get_roc_auc_score
+from .evaluation_metrics import is_prediction_correct, get_roc_auc_score
 from typing import Union, Any
 
 
 class EvaluationServer:
 
     def __init__(self) -> None:
-        self.redis = RedisClient()
+        self.redis = DatabaseRedis()
         self.db = DatabaseSQLite()
         # self.db = CassandraClient()
 
@@ -53,6 +53,7 @@ class EvaluationServer:
     def calculate_roc_auc_score(self, id_first_sample: int, id_last_sample: int):
         samples = self.db.get_all_samples_as_list_of_dicts()
         return get_roc_auc_score(samples)
+
 
 
 if __name__ == "__main__":

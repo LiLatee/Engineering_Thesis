@@ -2,6 +2,11 @@ import unittest
 import os
 import pandas as pd
 import numpy as np
+from sklearn.linear_model import SGDClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+
 import model_SGDClassifier
 
 
@@ -14,9 +19,9 @@ class TestModelSGDClassifier(unittest.TestCase):
         model = model_SGDClassifier.ModelSGDClassifier()
 
         self.create_and_save_model(model, 1000)
-        # self.assertTrue(isinstance(model.pca, PCA))
-        # self.assertTrue(isinstance(model.sc, StandardScaler))
-        # self.assertTrue(isinstance(model.model, SGDClassifier))
+        self.assertTrue(isinstance(model.pca, PCA), "PCA is None")
+        self.assertTrue(isinstance(model.sc, StandardScaler), "StandardScaler is None")
+        self.assertTrue(isinstance(model.model, SGDClassifier), "SGDClassifier is None")
 
         self.predict(model, 100)
         model.update_model()
@@ -24,11 +29,11 @@ class TestModelSGDClassifier(unittest.TestCase):
 
         os.remove('data/sqlite3.db')
 
-    def create_and_save_model(self, model, n_samples_for_training=1000):
+    def create_and_save_model(self, model, N_SAMPLES_FOR_TRAINING=1000):
         df = pd.read_csv(
             '/home/marcin/PycharmProjects/Engineering_Thesis/data_provider/data/CriteoSearchData-sorted-no-duplicates.csv',
             sep='\t',
-            nrows=n_samples_for_training,
+            nrows=N_SAMPLES_FOR_TRAINING,
             skiprows=np.arange(1, 50001),
             header=0,
             low_memory=False)
@@ -36,11 +41,11 @@ class TestModelSGDClassifier(unittest.TestCase):
         training_data_json = df.to_json(orient='records')
         model.create_model_and_save(training_data_json)
 
-    def predict(self, model, n_samples_for_testing = 100):
+    def predict(self, model, N_SAMPLES_FOR_TESTING = 100):
         df = pd.read_csv(
             '/home/marcin/PycharmProjects/Engineering_Thesis/data_provider/data/CriteoSearchData-sorted-no-duplicates.csv',
             sep='\t',
-            nrows=n_samples_for_testing,
+            nrows=N_SAMPLES_FOR_TESTING,
             low_memory=False)
 
         y_pred = np.array([])
