@@ -16,7 +16,7 @@ RowAsDictType = Dict[str, Union[str, float, int]]
 # TODO: id modelu przy wyszukiwaniu zmienić ze stałej
 class DatabaseSQLite:
     def __init__(self):
-        self.db_file = 'sqlite3.db' # dla systemu: '/data/sqlite3.db', dla testów: 'data/sqlite3.db'
+        self.db_file = 'data/sqlite3.db' # dla systemu: '/data/sqlite3.db', dla testów: 'data/sqlite3.db'
         self.create_tables()
 
     def create_connection(self) -> sqlite3.Connection:
@@ -175,7 +175,10 @@ class DatabaseSQLite:
         conn = self.create_connection()
         sql_query = 'SELECT version from model_history WHERE timestamp = (SELECT max(timestamp) FROM model_history WHERE name = "' + model_name + '")'
         result = conn.execute(sql_query).fetchone()
-        return int(result['version'])
+        if result is None:
+            return -1
+        else:
+            return int(result['version'])
 
     def get_samples_to_update_model_as_list_of_dicts(self, last_sample_id) -> List[RowAsDictType]:
         conn = self.create_connection()

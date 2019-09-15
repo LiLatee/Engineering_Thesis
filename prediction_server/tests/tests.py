@@ -20,6 +20,10 @@ class TestModelSGDClassifier(unittest.TestCase):
 
     def test_train_predict_update_predict(self, model):
         # model = model_SGDClassifier.ModelSGDClassifier()
+        try:
+            os.remove('data/sqlite3.db')
+        except FileNotFoundError:
+            pass
 
         self.create_and_save_model(model, 1000)
         self.assertTrue(isinstance(model.pca, PCA), "PCA is None")
@@ -30,7 +34,6 @@ class TestModelSGDClassifier(unittest.TestCase):
         model.update_model()
         self.predict(model, 100)
 
-        # os.remove('data/sqlite3.db')
 
     def create_and_save_model(self, model, N_SAMPLES_FOR_TRAINING=1000):
         df = pd.read_csv(

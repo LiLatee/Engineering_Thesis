@@ -124,11 +124,12 @@ class ModelSGDClassifier:
         # if self.model is None:
         #     print("LOG: " + "There is not model available. Must be created.")
 
+        new_version = self.db.get_last_version_of_specified_model('SGDClassifier') + 1 # todo usunąć hardcoded nazwę modelu
 
         # zapisywanie modelu do sqlite
         model_info = ModelInfo()
         model_info.name = 'SGDClassifier'
-        model_info.version = 0 #todo
+        model_info.version = new_version
         model_info.date_of_create = time.time()
         model_info.last_sample_id = self.last_sample_id
         model_info.model = self.model
