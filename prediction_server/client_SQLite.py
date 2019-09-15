@@ -16,7 +16,7 @@ RowAsDictType = Dict[str, Union[str, float, int]]
 # TODO: id modelu przy wyszukiwaniu zmienić ze stałej
 class DatabaseSQLite:
     def __init__(self):
-        self.db_file = 'data/sqlite3.db' # '/data/sqlite3.db' - sprawdzić to jak coś by nie działało
+        self.db_file = 'data/sqlite3.db' # dla systemu: '/data/sqlite3.db', dla testów: 'data/sqlite3.db'
         self.create_tables()
 
     def create_connection(self) -> sqlite3.Connection:

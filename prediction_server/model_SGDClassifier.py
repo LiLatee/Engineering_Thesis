@@ -200,9 +200,8 @@ class ModelSGDClassifier:
         # self.sc = pickle.loads(model_history.standard_scaler)
         # self.pca = pickle.loads(model_history.pca_one+model_history.pca)
 
-
 if __name__ == '__main__':
-    m = ModelSGDClassifier()
-    m.test_train(1000)
-    m.test_predict(100)
+    pass
+
+
 

@@ -1,6 +1,6 @@
 import numpy as np
 import json
-
+import os
 
 from typing import List, Dict, Union, Tuple
 from sklearn.model_selection import train_test_split
@@ -94,6 +94,7 @@ def set_values_to_one_hot_vectors_columns(old_dict: RowAsDictType, new_dict: Row
     return new_dict
 
 def read_required_column_names() -> List[str]:
-    required_column_name_file = open('/home/marcin/PycharmProjects/Engineering_Thesis/prediction_server/required_column_names_list.txt', 'r')
+    curdir = os.getcwd()
+    required_column_name_file = open(curdir + '/required_column_names_list.txt', 'r')
     required_column_names_list = required_column_name_file.read().splitlines()
     return required_column_names_list

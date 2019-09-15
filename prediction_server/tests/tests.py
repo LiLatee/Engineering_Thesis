@@ -12,6 +12,7 @@ import model_SGDClassifier
 
 # start redis before testing
 # sudo docker run --name redis_tests --network host --rm redis:latest --port 6379
+# in client_SQLite.py change self.db_file in __init__() to "data/sqlite3.db"
 
 class TestModelSGDClassifier(unittest.TestCase):
 
