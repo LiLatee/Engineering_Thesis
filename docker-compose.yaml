@@ -77,7 +77,7 @@ services:
       - "sqlite:/data"
     depends_on:
       - cassandra
-    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "evaluation_server2.py"]
+    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "server.py"]
     ports:
       - 8766:8766
     stdin_open: true

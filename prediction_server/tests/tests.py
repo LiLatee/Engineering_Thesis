@@ -13,11 +13,13 @@ import model_SGDClassifier
 # start redis before testing
 # sudo docker run --name redis_tests --network host --rm redis:latest --port 6379
 # in client_SQLite.py change self.db_file in __init__() to "data/sqlite3.db"
+# AND in client_redis change address to 127.0.0.1
+
 
 class TestModelSGDClassifier(unittest.TestCase):
 
-    def test_train_predict_update_predict(self):
-        model = model_SGDClassifier.ModelSGDClassifier()
+    def test_train_predict_update_predict(self, model):
+        # model = model_SGDClassifier.ModelSGDClassifier()
 
         self.create_and_save_model(model, 1000)
         self.assertTrue(isinstance(model.pca, PCA), "PCA is None")
@@ -28,7 +30,7 @@ class TestModelSGDClassifier(unittest.TestCase):
         model.update_model()
         self.predict(model, 100)
 
-        os.remove('data/sqlite3.db')
+        # os.remove('data/sqlite3.db')
 
     def create_and_save_model(self, model, N_SAMPLES_FOR_TRAINING=1000):
         df = pd.read_csv(
@@ -60,5 +62,9 @@ class TestModelSGDClassifier(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    model = model_SGDClassifier.ModelSGDClassifier()
     f = TestModelSGDClassifier()
-    f.test_train_predict_update_predict()
+    f.test_train_predict_update_predict(model)
+    f.predict(model, 100)
+    model.update_model()
+

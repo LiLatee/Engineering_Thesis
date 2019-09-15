@@ -20,7 +20,7 @@ class AdapterDB:
         self.sqlite.insert_ModelInfo(model_info)
 
     def get_last_model_info(self):
-        return self.sqlite.get_last_model_info()
+        return self.sqlite.get_last_ModelInfo()
 
 
 if __name__ == '__main__':

@@ -107,7 +107,7 @@ class ModelSGDClassifier:
         y = np.array([int(i) for i in y])
 
         self.model.partial_fit(x, y, classes=np.array([0, 1]))
-        # self.save_model() # todo zostawić tylko przy używaniu sqlite
+        self.save_model() # todo zostawić tylko przy używaniu sqlite
 
         self.last_sample_id = samples_list_of_dicts[-1]['id'] #todo sprawdzić czy działa
 
@@ -181,7 +181,7 @@ class ModelSGDClassifier:
 
     def load_model(self) -> None:
         # wczytywanie z sqlite
-        model_info = self.db.get_last_model_info()
+        model_info = self.db.get_last_ModelInfo()
         self.model = model_info.model
         self.sc = model_info.sc
         self.pca = model_info.pca
