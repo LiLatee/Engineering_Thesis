@@ -5,4 +5,4 @@ cqlengine==0.21.0
 redis==3.3.5
 scikit-learn==0.21.3
 requests==2.22.0
-
+pyzmq==18.1.0

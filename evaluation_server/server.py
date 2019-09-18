@@ -3,10 +3,10 @@ import websockets
 import json
 import time
 from client_redis import DatabaseRedis
-from client_cass import CassandraClient
+# from client_cass import CassandraClient
 from client_SQLite import DatabaseSQLite
-from evaluation_metrics import is_prediction_correct, get_roc_auc_score
 from typing import Union, Any
+from metrics import is_prediction_correct, get_roc_auc_score
 
 
 class EvaluationServer:

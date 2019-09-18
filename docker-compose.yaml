@@ -38,11 +38,37 @@ services:
     depends_on:
       - cassandra
 #      - cassandra_api
-    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "prediction_api.py"]
+    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "api.py"]
     ports:
       - 5000:5000
 
-#  cassandra_api:
+  training_server:
+    container_name: fit_model_server
+    build: fit_model_server
+    volumes:
+      - ./fit_model_server:/usr/src/app
+      - "sqlite:/data"
+    depends_on:
+      - cassandra
+    #      - cassandra_api
+    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_fit_model.py"]
+    ports:
+      - 5001:5001
+
+  update_model_server:
+    container_name: update_model_server
+    build: update_model_server
+    volumes:
+      - ./update_model_server:/usr/src/app
+      - "sqlite:/data"
+    depends_on:
+      - cassandra
+    #      - cassandra_api
+    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_update_model.py"]
+    ports:
+      - 5002:5002
+
+  #  cassandra_api:
 #    container_name: cassandra_api-not-used
 #    build: cassandra_api-not-used
 #    volumes:
