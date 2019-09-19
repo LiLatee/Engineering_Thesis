@@ -34,6 +34,7 @@ class ModelSGDClassifier:
         self.redis_DB: DatabaseRedis = DatabaseRedis()
         # self.db: CassandraClient = CassandraClient()
         self.db: DatabaseSQLite = DatabaseSQLite()
+        self.load_model_if_exists()
 
         # self.redis_DB.del_all_samples()
 
@@ -72,7 +73,7 @@ class ModelSGDClassifier:
         print(confmat)
 
         self.model = lr
-        # self.save_model() # todo tylko jak sqlite
+        self.save_model() # todo tylko jak sqlite
 
     def predict(self, sample_json: JSONType) -> Tuple[np.ndarray, np.ndarray]:
         sample_dict = json.loads(sample_json)
@@ -180,9 +181,11 @@ class ModelSGDClassifier:
         # db.insert_model_history(model_history)
         # print("LOG: saving model DONE")
 
-    def load_model(self) -> None:
+    def load_model_if_exists(self) -> None:
         # wczytywanie z sqlite
         model_info = self.db.get_last_ModelInfo()
+        if model_info is None:
+            return
         self.model = model_info.model
         self.sc = model_info.sc
         self.pca = model_info.pca

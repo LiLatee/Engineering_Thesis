@@ -19,11 +19,11 @@ def predict():
     global counter_to_load_model
     global counter_to_update_model
 
-    if counter_to_load_model >= 2:
-        model.load_model()
+    if counter_to_load_model >= 200:
+        model.load_model_if_exists()
         print("loaded nmodel")
         counter_to_load_model = 0
-    if counter_to_update_model >= 5:
+    if counter_to_update_model >= 500:
         model.update_model()
         print("updated nmodel")
         counter_to_update_model = 0

@@ -5,7 +5,7 @@ import pickle
 import model_info
 import time
 from sqlite3 import Error
-from typing import Union, Dict, Any, List
+from typing import Union, Dict, List
 from model_info import ModelInfo
 
 # JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
@@ -16,7 +16,7 @@ RowAsDictType = Dict[str, Union[str, float, int]]
 # TODO: id modelu przy wyszukiwaniu zmienić ze stałej
 class DatabaseSQLite:
     def __init__(self):
-        self.db_file = '/data/sqlite3.db'
+        self.db_file = '/data/sqlite3.db' # dla systemu: '/data/sqlite3.db', dla testów: 'data/sqlite3.db'
         self.create_tables()
 
     def create_connection(self) -> sqlite3.Connection:
@@ -141,10 +141,11 @@ class DatabaseSQLite:
         conn.commit()
         conn.close()
 
-    def get_last_model_info(self) -> model_info:
+    def get_last_ModelInfo(self) -> model_info:
         sql_query = """ SELECT * FROM model_history
                         WHERE id = (SELECT max(id) FROM model_history)"""
         conn = self.create_connection()
+        conn.row_factory = None
         result = conn.execute(sql_query).fetchone()
         if result is None:
             return None
@@ -172,6 +173,15 @@ class DatabaseSQLite:
         conn.close()
         return result[0]
 
+    def get_last_version_of_specified_model(self, model_name: str) -> int:
+        conn = self.create_connection()
+        sql_query = 'SELECT version from model_history WHERE timestamp = (SELECT max(timestamp) FROM model_history WHERE name = "' + model_name + '")'
+        result = conn.execute(sql_query).fetchone()
+        if result is None:
+            return -1
+        else:
+            return int(result['version'])
+
     def get_samples_to_update_model_as_list_of_dicts(self, last_sample_id) -> List[RowAsDictType]:
         conn = self.create_connection()
         # last_sample_id = self.get_last_model_info().last_sample_id
@@ -191,11 +201,38 @@ class DatabaseSQLite:
         # return df
 
         cur = conn.cursor()
-        cur.execute('SELECT * FROM model_history WHERE')
+        cur.execute('SELECT * FROM model_history')
         list_of_dicts = cur.fetchall()
         conn.commit()
         conn.close()
         return list_of_dicts
+
+    def get_all_models_history_as_list_of_ModelInfo(self) -> List[ModelInfo]:
+        conn = self.create_connection()
+        # df = pd.read_sql_query('SELECT * FROM model_history', conn)
+        # return df
+
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM model_history')
+        list_of_dicts = cur.fetchall()
+        conn.commit()
+        conn.close()
+        list_of_ModelInfo = []
+        for x in list_of_dicts:
+            model_info = ModelInfo()
+            list_of_values = list(x.values())
+            model_info.id = list_of_values[0]
+            model_info.name = list_of_values[1]
+            model_info.version = list_of_values[2]
+            model_info.date_of_create = list_of_values[3]
+            model_info.last_sample_id = list_of_values[4]
+            model_info.model = pickle.loads(list_of_values[5])
+            model_info.sc = pickle.loads(list_of_values[6])
+            model_info.pca = pickle.loads(list_of_values[7])
+
+            list_of_ModelInfo.append(model_info)
+
+        return list_of_ModelInfo
 
     def get_all_samples_as_list_of_dicts(self) -> List[RowAsDictType]:
         conn = self.create_connection()
@@ -231,7 +268,8 @@ class DatabaseSQLite:
 
 if __name__ == '__main__':
     db = DatabaseSQLite()
-    print(db.get_all_samples_as_list_of_dicts())
+    result = db.get_last_version_of_specified_model('SGDClassifier')
+    print(result)
     # db.create_tables()
     # df = db.read_csv_data(
     #     filepath='/home/marcin/PycharmProjects/Engineering_Thesis/data/CriteoSearchData-sorted.csv', rows=10)

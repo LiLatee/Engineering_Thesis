@@ -145,6 +145,7 @@ class DatabaseSQLite:
         sql_query = """ SELECT * FROM model_history
                         WHERE id = (SELECT max(id) FROM model_history)"""
         conn = self.create_connection()
+        conn.row_factory = None
         result = conn.execute(sql_query).fetchone()
         if result is None:
             return None
