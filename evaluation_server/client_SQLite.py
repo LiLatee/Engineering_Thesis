@@ -146,7 +146,8 @@ class DatabaseSQLite:
                         WHERE id = (SELECT max(id) FROM model_history)"""
         conn = self.create_connection()
         result = conn.execute(sql_query).fetchone()
-
+        if result is None:
+            return None
         model_info = ModelInfo()
         model_info.id = result[0]
         model_info.name = result[1]

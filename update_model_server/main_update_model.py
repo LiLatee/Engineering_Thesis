@@ -6,7 +6,7 @@ model = ModelSGDClassifier()
 
 context = zmq.Context()
 info_receiver = context.socket(zmq.PULL)
-info_receiver.bind("tcp://127.0.0.1:5000")
+info_receiver.bind("tcp://0.0.0.0:5002")
 while True:
     info_receiver.recv_string()  # waits for signal to update
     model.load_model()

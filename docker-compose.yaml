@@ -42,7 +42,7 @@ services:
     ports:
       - 5000:5000
 
-  training_server:
+  fit_model_server:
     container_name: fit_model_server
     build: fit_model_server
     volumes:
@@ -103,7 +103,7 @@ services:
       - "sqlite:/data"
     depends_on:
       - cassandra
-    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "server.py"]
+    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_evaluation_server.py"]
     ports:
       - 8766:8766
     stdin_open: true
