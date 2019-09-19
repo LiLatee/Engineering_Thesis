@@ -83,7 +83,7 @@ def send_samples_for_model_training() -> None:
         header=0,
         usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
 
-    requests.request(method='POST', url='http://127.0.0.1:5000/fit', data=data.to_json(orient='records'))
+    requests.request(method='POST', url='http://prediction_server:5000/fit', data=data.to_json(orient='records'))
     print('data for training was send. ' + str(data.shape))
 
 
@@ -109,24 +109,6 @@ if __name__ == "__main__":
     #         g = json.dumps(g)
     #         print(g)
 
-    # server_waiting_for_start = websockets.serve(consumer_handler, "0.0.0.0", 8765)
-    # asyncio.get_event_loop().run_until_complete(server_waiting_for_start)
-    # asyncio.get_event_loop().run_forever()
-
-
-    send_samples_for_model_training()
-    chunksize = 3
-    samples_num = 0
-
-    for chunk in pd.read_csv(
-            data_file_name,
-            sep='\t',
-            chunksize=chunksize,
-            skiprows=(1, train_model_samples_number),
-            header=0,
-            nrows = 1000,
-            usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]):
-        for index, row in chunk.iterrows():
-            samples_num += 1
-            # print(samples_num)
-            requests.request(method='POST', url='http://127.0.0.1:5000/predict', data=row.to_json())
+    server_waiting_for_start = websockets.serve(consumer_handler, "0.0.0.0", 8765)
+    asyncio.get_event_loop().run_until_complete(server_waiting_for_start)
+    asyncio.get_event_loop().run_forever()
