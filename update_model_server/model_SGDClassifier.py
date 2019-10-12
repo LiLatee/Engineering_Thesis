@@ -33,7 +33,7 @@ class ModelSGDClassifier:
         self.redis_DB: DatabaseRedis = DatabaseRedis()
         self.db: DatabaseSQLite = DatabaseSQLite()
         self.load_model_if_exists()
-        # self.redis_DB.del_all_samples()
+        self.redis_DB.del_all_samples()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:
         print("create_model_and_save")
@@ -90,7 +90,7 @@ class ModelSGDClassifier:
         sample_json = json.dumps(sample_dict)
 
         self.redis_DB.rpush_sample(sample_json)
-        self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
+        # self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
 
         return y, probability
 

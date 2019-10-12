@@ -177,6 +177,8 @@ class DatabaseSQLite:
         conn = self.create_connection()
         sql_query = 'SELECT version from model_history WHERE timestamp = (SELECT max(timestamp) FROM model_history WHERE name = "' + model_name + '")'
         result = conn.execute(sql_query).fetchone()
+        conn.commit() #todo chyba można wywalić w wielu miejscach
+        conn.close()
         if result is None:
             return -1
         else:

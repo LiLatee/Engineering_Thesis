@@ -2,7 +2,7 @@ import zmq
 import json
 from flask import Flask, request
 from model_SGDClassifier import ModelSGDClassifier
-
+import requests
 
 app = Flask(__name__)
 model = ModelSGDClassifier()
@@ -19,13 +19,14 @@ def predict():
     global counter_to_load_model
     global counter_to_update_model
 
-    if counter_to_load_model >= 200:
+    if counter_to_load_model >= 100:
         model.load_model_if_exists()
         print("loaded nmodel")
         counter_to_load_model = 0
-    if counter_to_update_model >= 500:
-        model.update_model()
-        print("updated nmodel")
+    if counter_to_update_model >= 200:
+        # model.update_model()
+        print("updating model started")
+        requests.request(method='GET', url='http://127.0.0.1:5000/update')
         counter_to_update_model = 0
 
     #todo wynik dać do kolejki zmq evaluation servera

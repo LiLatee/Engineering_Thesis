@@ -27,7 +27,7 @@ class DatabaseSQLite:
             return d
 
         try:
-            conn = sqlite3.connect(self.db_file)
+            conn = sqlite3.connect(self.db_file, timeout=10)
             conn.row_factory = dict_factory
             return conn
         except Error as e:
@@ -177,6 +177,8 @@ class DatabaseSQLite:
         conn = self.create_connection()
         sql_query = 'SELECT version from model_history WHERE timestamp = (SELECT max(timestamp) FROM model_history WHERE name = "' + model_name + '")'
         result = conn.execute(sql_query).fetchone()
+        conn.commit()
+        conn.close()
         if result is None:
             return -1
         else:
