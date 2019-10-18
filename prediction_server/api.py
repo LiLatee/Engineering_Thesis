@@ -39,8 +39,9 @@ def predict():
 # dodatkowe
 @app.route('/fit', methods=['POST'])
 def fit():
-    fit_socket.send_string(json.dumps(json.loads(request.data)))  # convert from bytes to string
-    result = fit_socket.recv()  # wait for end of fitting
+    # fit_socket.send_string(json.dumps(json.loads(request.data)))  # convert from bytes to string
+    # result = fit_socket.recv()  # wait for end of fitting
+    result = model.create_model_and_save(json.dumps(json.loads(request.data)))
     return str(result)
 
 @app.route('/update', methods=['GET'])

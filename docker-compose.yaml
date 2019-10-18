@@ -1,7 +1,8 @@
 version: '3'
 
 volumes:
-  sqlite:
+  samples:
+  model_history:
 
 services:
   cassandra:
@@ -34,7 +35,8 @@ services:
     build: ./prediction_server
     volumes:
       - ./prediction_server:/usr/src/app
-      - "sqlite:/data"
+      - "samples:/data"
+      - "model_history:/data"
     depends_on:
       - cassandra
 #      - cassandra_api
@@ -47,7 +49,8 @@ services:
     build: fit_model_server
     volumes:
       - ./fit_model_server:/usr/src/app
-      - "sqlite:/data"
+      - "samples:/data"
+      - "model_history:/data"
     depends_on:
       - cassandra
     #      - cassandra_api
@@ -60,7 +63,8 @@ services:
     build: update_model_server
     volumes:
       - ./update_model_server:/usr/src/app
-      - "sqlite:/data"
+      - "samples:/data"
+      - "model_history:/data"
     depends_on:
       - cassandra
     #      - cassandra_api
@@ -100,7 +104,8 @@ services:
     build: ./evaluation_server
     volumes:
       - ./evaluation_server:/usr/src/app
-      - "sqlite:/data"
+      - "samples:/data"
+      - "model_history:/data"
     depends_on:
       - cassandra
     command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_evaluation_server.py"]

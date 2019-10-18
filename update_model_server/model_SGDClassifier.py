@@ -32,6 +32,7 @@ class ModelSGDClassifier:
         self.required_column_names_list: List[str] = dp.read_required_column_names()
         self.redis_DB: DatabaseRedis = DatabaseRedis()
         self.db: DatabaseSQLite = DatabaseSQLite()
+
         self.load_model_if_exists()
         self.redis_DB.del_all_samples()
 
@@ -97,6 +98,9 @@ class ModelSGDClassifier:
     def update_model(self) -> None:
         samples_list_of_dicts = self.db.get_samples_to_update_model_as_list_of_dicts(self.last_sample_id)
         x, y = dp.split_data_to_x_and_y(samples_list_of_dicts)
+        file = open("test.txt", 'a+')
+        file.write(str(len(samples_list_of_dicts)))
+        file.write(json.dumps(samples_list_of_dicts))
         x = self.pca.transform(x)
         adasyn = ADASYN(random_state=1)
         x, y = adasyn.fit_resample(x, y) #TODO blad jak wszystkie probki sa z jednej klasy
