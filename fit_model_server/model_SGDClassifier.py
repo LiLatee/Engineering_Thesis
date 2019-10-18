@@ -150,7 +150,7 @@ class ModelSGDClassifier:
         # last_sample_id = db.get_last_sample_id()
 
         # None, "SGDClassifier", 0, None, last_sample_id, self.model, self.sc, self.pca
-        # model_history = ModelHistory(
+        # models = ModelHistory(
         #     id=-1,
         #     name='SGDClassifier',
         #     version=0,
@@ -163,7 +163,7 @@ class ModelSGDClassifier:
         # pca_bytes = len(pca_binary)
         # print('TUUUUUUUU')
         # print(pca_bytes)
-        # model_history = {
+        # models = {
         #     "id": -1,
         #     "name": "SGDClassifier",
         #     "version": 0,
@@ -175,7 +175,7 @@ class ModelSGDClassifier:
         #     "pca_two": pca_binary[1000000:2000000]
         # }
         #
-        # db.insert_model_history(model_history)
+        # db.insert_models(models)
         # print("LOG: saving model DONE")
 
     def load_model_if_exists(self) -> None:
@@ -196,10 +196,10 @@ class ModelSGDClassifier:
 
         # wczytywanie z cassandry
         # db = CassandraClient()
-        # model_history = db.get_last_model_history()
-        # self.model = pickle.loads(model_history.model)
-        # self.sc = pickle.loads(model_history.standard_scaler)
-        # self.pca = pickle.loads(model_history.pca_one+model_history.pca)
+        # models = db.get_last_models()
+        # self.model = pickle.loads(models.model)
+        # self.sc = pickle.loads(models.standard_scaler)
+        # self.pca = pickle.loads(models.pca_one+models.pca)
 
 if __name__ == '__main__':
     pass

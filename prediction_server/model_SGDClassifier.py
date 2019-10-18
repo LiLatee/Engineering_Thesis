@@ -5,9 +5,7 @@ import collections
 import time
 
 import data_preprocessing as dp
-from client_cass import CassandraClient
 from client_SQLite import DatabaseSQLite
-import client_SQLite_model_history
 from model_info import ModelInfo
 from client_redis import DatabaseRedis
 
@@ -33,12 +31,9 @@ class ModelSGDClassifier:
         self.last_sample_id: int = -1
         self.required_column_names_list: List[str] = dp.read_required_column_names()
         self.redis_DB: DatabaseRedis = DatabaseRedis()
-        # self.db: CassandraClient = CassandraClient()
         self.db: DatabaseSQLite = DatabaseSQLite()
-        self.db_model_history: DatabaseSQLite = client_SQLite_model_history.DatabaseSQLite()
 
         self.load_model_if_exists()
-
         self.redis_DB.del_all_samples()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:
@@ -79,8 +74,6 @@ class ModelSGDClassifier:
         self.save_model() # todo tylko jak sqlite
 
     def predict(self, sample_json: JSONType) -> Tuple[np.ndarray, np.ndarray]:
-        # if self.model == None: #todo może jakoś to inaczej rozwiązać, problem gdy pierwsza predykcja i modelu nie ma załadowanego do obiektu
-        #     self.load_model_if_exists()
         sample_dict = json.loads(sample_json)
 
         transformed_sample_list_of_values = list(dp.transform_dict_row_in_one_hot_vectors_dict(sample_dict).values())
@@ -98,7 +91,7 @@ class ModelSGDClassifier:
         sample_json = json.dumps(sample_dict)
 
         self.redis_DB.rpush_sample(sample_json)
-        self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
+        # self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
 
         return y, probability
 
@@ -130,7 +123,7 @@ class ModelSGDClassifier:
         # if self.model is None:
         #     print("LOG: " + "There is not model available. Must be created.")
 
-        new_version = self.db_model_history.get_last_version_of_specified_model('SGDClassifier') + 1 # todo usunąć hardcoded nazwę modelu
+        new_version = self.db.get_last_version_of_specified_model('SGDClassifier') + 1 # todo usunąć hardcoded nazwę modelu
 
         # zapisywanie modelu do sqlite
         model_info = ModelInfo()
@@ -141,7 +134,7 @@ class ModelSGDClassifier:
         model_info.model = self.model
         model_info.sc = self.sc
         model_info.pca = self.pca
-        self.db_model_history.insert_ModelInfo(model_info)
+        self.db.insert_ModelInfo(model_info)
         print("LOG: saving model DONE")
 
         # zapisywanie modelu do pliku
@@ -158,7 +151,7 @@ class ModelSGDClassifier:
         # last_sample_id = db.get_last_sample_id()
 
         # None, "SGDClassifier", 0, None, last_sample_id, self.model, self.sc, self.pca
-        # model_history = ModelHistory(
+        # models = ModelHistory(
         #     id=-1,
         #     name='SGDClassifier',
         #     version=0,
@@ -171,7 +164,7 @@ class ModelSGDClassifier:
         # pca_bytes = len(pca_binary)
         # print('TUUUUUUUU')
         # print(pca_bytes)
-        # model_history = {
+        # models = {
         #     "id": -1,
         #     "name": "SGDClassifier",
         #     "version": 0,
@@ -183,13 +176,12 @@ class ModelSGDClassifier:
         #     "pca_two": pca_binary[1000000:2000000]
         # }
         #
-        # db.insert_model_history(model_history)
+        # db.insert_models(models)
         # print("LOG: saving model DONE")
-
 
     def load_model_if_exists(self) -> None:
         # wczytywanie z sqlite
-        model_info = self.db_model_history.get_last_ModelInfo()
+        model_info = self.db.get_last_ModelInfo()
         if model_info is None:
             return
         self.model = model_info.model
@@ -205,10 +197,10 @@ class ModelSGDClassifier:
 
         # wczytywanie z cassandry
         # db = CassandraClient()
-        # model_history = db.get_last_model_history()
-        # self.model = pickle.loads(model_history.model)
-        # self.sc = pickle.loads(model_history.standard_scaler)
-        # self.pca = pickle.loads(model_history.pca_one+model_history.pca)
+        # models = db.get_last_models()
+        # self.model = pickle.loads(models.model)
+        # self.sc = pickle.loads(models.standard_scaler)
+        # self.pca = pickle.loads(models.pca_one+models.pca)
 
 if __name__ == '__main__':
     pass

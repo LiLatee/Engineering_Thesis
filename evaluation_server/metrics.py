@@ -15,7 +15,7 @@ def get_num_of_good_predictions(samples: List[bytes]) -> int:
 
 
 def is_prediction_correct(sample: dict) -> bool:
-    return str(sample.get("Sale")) == str(sample.get("predicted"))
+    return str(sample.get("sale")) == str(sample.get("predicted"))
 
 
 def get_roc_auc_score(samples: dict) -> float:

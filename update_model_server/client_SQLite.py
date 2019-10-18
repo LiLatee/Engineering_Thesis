@@ -17,7 +17,7 @@ RowAsDictType = Dict[str, Union[str, float, int]]
 class DatabaseSQLite:
     def __init__(self):
         self.db_file_samples = '/data/samples.db' # dla systemu: '/data/samples.db', dla testów: 'data/samples.db'
-        self.db_file_models = '/data/model_history.db'
+        self.db_file_models = '/data/models.db'
         self.create_tables()
 
     def create_connection_samples(self) -> sqlite3.Connection:
@@ -77,7 +77,7 @@ class DatabaseSQLite:
                                             predicted TEXT,
                                             probabilities TEXT
                                             ); """
-        sql_create_model_history_table = """ CREATE TABLE IF NOT EXISTS model_history (
+        sql_create_models_table = """ CREATE TABLE IF NOT EXISTS models (
         id INTEGER PRIMARY KEY,
         name TEXT,
         version INTEGER,
@@ -101,7 +101,7 @@ class DatabaseSQLite:
         conn = self.create_connection_models()
         try:
             c = conn.cursor()
-            c.execute(sql_create_model_history_table)
+            c.execute(sql_create_models_table)
         except Error as e:
             print(e)
         conn.commit()
@@ -146,7 +146,7 @@ class DatabaseSQLite:
         return cur.lastrowid
 
     def insert_ModelInfo(self, model_info: model_info) -> None:
-        sql_query = """ INSERT INTO model_history (name, version, last_sample_id, model, standard_scaler, pca) VALUES (?,?,?,?,?,?)"""
+        sql_query = """ INSERT INTO models (name, version, last_sample_id, model, standard_scaler, pca) VALUES (?,?,?,?,?,?)"""
         binary_model = pickle.dumps(model_info.model)
         binary_standard_scaler = pickle.dumps(model_info.sc)
         binary_pca = pickle.dumps(model_info.pca)
@@ -165,8 +165,8 @@ class DatabaseSQLite:
         conn.close()
 
     def get_last_ModelInfo(self) -> model_info:
-        sql_query = """ SELECT * FROM model_history
-                        WHERE id = (SELECT max(id) FROM model_history)"""
+        sql_query = """ SELECT * FROM models
+                        WHERE id = (SELECT max(id) FROM models)"""
         conn = self.create_connection_models()
         conn.row_factory = None
         result = conn.execute(sql_query).fetchone()
@@ -198,7 +198,7 @@ class DatabaseSQLite:
 
     def get_last_version_of_specified_model(self, model_name: str) -> int:
         conn = self.create_connection_models()
-        sql_query = 'SELECT version from model_history WHERE timestamp = (SELECT max(timestamp) FROM model_history WHERE name = "' + model_name + '")'
+        sql_query = 'SELECT version from models WHERE timestamp = (SELECT max(timestamp) FROM models WHERE name = "' + model_name + '")'
         result = conn.execute(sql_query).fetchone()
         conn.commit() #todo chyba można wywalić w wielu miejscach
         conn.close()
@@ -222,11 +222,11 @@ class DatabaseSQLite:
 
     def get_all_models_history_as_list_of_dicts(self) -> List[RowAsDictType]:
         conn = self.create_connection_models()
-        # df = pd.read_sql_query('SELECT * FROM model_history', conn)
+        # df = pd.read_sql_query('SELECT * FROM models', conn)
         # return df
 
         cur = conn.cursor()
-        cur.execute('SELECT * FROM model_history')
+        cur.execute('SELECT * FROM models')
         list_of_dicts = cur.fetchall()
         conn.commit()
         conn.close()
@@ -234,11 +234,11 @@ class DatabaseSQLite:
 
     def get_all_models_history_as_list_of_ModelInfo(self) -> List[ModelInfo]:
         conn = self.create_connection_models()
-        # df = pd.read_sql_query('SELECT * FROM model_history', conn)
+        # df = pd.read_sql_query('SELECT * FROM models', conn)
         # return df
 
         cur = conn.cursor()
-        cur.execute('SELECT * FROM model_history')
+        cur.execute('SELECT * FROM models')
         list_of_dicts = cur.fetchall()
         conn.commit()
         conn.close()

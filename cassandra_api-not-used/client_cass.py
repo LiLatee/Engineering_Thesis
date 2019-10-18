@@ -47,7 +47,7 @@ class CassandraClient:
         super().__init__()
         self.KEYSPACE = 'keyspace_name'
         self.SAMPLE_TABLE = 'sample'
-        self.MODEL_HISTORY_TABLE = 'model_history'
+        self.models_TABLE = 'models'
         self.LAST_SAMPLE_ID = 1
 
         self.setup_cassandra()
@@ -114,7 +114,7 @@ class CassandraClient:
 
 
     def add_some_data(self) -> None:
-        # model_history = {
+        # models = {
         #     "id": 1,
         #     "name": "new model",
         #     "version": 21,
@@ -152,7 +152,7 @@ class CassandraClient:
             "user_id": "35"
         }
 
-        # self.insert_model_history(model_history)
+        # self.insert_models(models)
         self.insert_sample(sample)
 
  # todo dodać obsług≥e błedów, jak select nic nie zwraca WSZEDZIE
