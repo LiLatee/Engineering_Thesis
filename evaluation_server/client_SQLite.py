@@ -218,6 +218,8 @@ class DatabaseSQLite:
         list_of_dicts = cur.fetchall()
         conn.commit()
         conn.close()
+        for sample in list_of_dicts:#todo to samo z predicted z str na int? zmienić w bazie
+            sample['probabilities'] = json.loads(sample['probabilities'])
         return list_of_dicts
 
     def get_all_models_history_as_list_of_dicts(self) -> List[RowAsDictType]:
@@ -271,6 +273,8 @@ class DatabaseSQLite:
         list_of_dicts = cur.fetchall()
         conn.commit()
         conn.close()
+        for sample in list_of_dicts: #todo to samo z predicted z str na int? zmienić w bazie
+            sample['probabilities'] = json.loads(sample['probabilities'])
         return list_of_dicts
 
 
