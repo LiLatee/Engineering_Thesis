@@ -17,7 +17,9 @@ class DatabaseRedis:
         #     list_of_dicts.append(json.loads(x))
         # return list_of_dicts
 
-        return self.redis.lrange('samples', 0, -1)
+        result_list = self.redis.lrange('samples', 0, -1)
+        self.redis.ltrim("samples", len(result_list), -1)
+        return  result_list
 
     def del_all_samples(self):
         self.redis.delete('samples')

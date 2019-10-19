@@ -49,8 +49,9 @@ class EvaluationServer:
         # file.write(str(self.test_counter) + ". " + str(end - start) + '\n')
         # self.test_counter = self.test_counter + 1
 
-        self.redis.del_all_samples()
-
+        # self.redis.del_all_samples()
+        print("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
+        print(len(processed_samples))
         return {
             "processed_samples": self.num_processed_samples,
             "correct_predictions": self.correct_predictions,

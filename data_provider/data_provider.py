@@ -142,13 +142,19 @@ if __name__ == "__main__":
     #     header=0,
     #     usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
     #
-    # print("sending to fit...")
-    # f = requests.request(method='POST', url='http://127.0.0.1:5000/fit', data=data.to_json(orient='records'))
-    # print(f)
+    # session = requests.Session()
+    # retry = Retry(connect=3, backoff_factor=0.5)
+    # adapter = HTTPAdapter(max_retries=retry)
+    # session.mount('http://', adapter)
+    # session.mount('https://', adapter)
+    # session.post(url="http://0.0.0.0:5000/fit", data=data.to_json(orient='records'))
+    # # time.sleep(0.5)
+    #
+    # # requests.request(method='POST', url='http://prediction_server:5000/fit', data=data.to_json(orient='records'))
     # print('data for training was send. ' + str(data.shape))
 
-    # import time
-    #
+
+
     # chunksize = 1
     # samples_num = 0
     # list_of_times = []
@@ -162,9 +168,11 @@ if __name__ == "__main__":
     #         usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]):
     #     for index, row in chunk.iterrows():
     #         samples_num += 1
-    #         start = time.time()
-    #         requests.request(method='POST', url='http://127.0.0.1:5000/predict', data=row.to_json())
-    #         list_of_times.append(time.time() - start)
-    #         # print(index)
-    # print(sum(list_of_times))
-    # print(sum(list_of_times)/len(list_of_times))
+    #         # print(samples_num)
+    #         session = requests.Session()
+    #         retry = Retry(connect=3, backoff_factor=0.5)
+    #         adapter = HTTPAdapter(max_retries=retry)
+    #         session.mount('http://', adapter)
+    #         session.mount('https://', adapter)
+    #         session.post(url="http://0.0.0.0:5000/predict", data=row.to_json())
+    #         # time.sleep(0.02)
