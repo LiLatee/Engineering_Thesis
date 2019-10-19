@@ -19,6 +19,8 @@ class EvaluationServer:
         self.num_processed_samples = 0
         self.correct_predictions = 0
 
+        # self.test_counter = 0
+
     async def wait_for_start(self, websocket, path) -> None:
         async for message in websocket:
             if message == 'start':
@@ -31,6 +33,8 @@ class EvaluationServer:
             time.sleep(1)
 
     def process_latest_samples_and_create_message(self) -> dict:
+        # file = open("test.txt", "a+")
+        # start = time.time()
         processed_samples = self.redis.get_all_samples_as_list_of_bytes()
         for sample in processed_samples:
             sample_json = json.loads(sample.decode('utf8'))
@@ -41,7 +45,12 @@ class EvaluationServer:
         if self.num_processed_samples > 50:
             roc_auc_score = self.calculate_roc_auc_score(None, None)
 
+        # end = time.time()
+        # file.write(str(self.test_counter) + ". " + str(end - start) + '\n')
+        # self.test_counter = self.test_counter + 1
+
         self.redis.del_all_samples()
+
         return {
             "processed_samples": self.num_processed_samples,
             "correct_predictions": self.correct_predictions,
@@ -55,7 +64,6 @@ class EvaluationServer:
     def calculate_roc_auc_score(self, id_first_sample: int, id_last_sample: int):
         samples = self.db.get_all_samples_as_list_of_dicts()
         return get_roc_auc_score(samples)
-
 
 
 if __name__ == "__main__":

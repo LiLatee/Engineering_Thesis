@@ -59,7 +59,7 @@ async def process_all_samples(websocket, path) -> None:
             session.mount('http://', adapter)
             session.mount('https://', adapter)
             session.post(url="http://prediction_server:5000/predict", data=row.to_json())
-            time.sleep(0.2)
+            # time.sleep(0.02)
 
             # requests.request(method='POST', url='http://prediction_server:5000/predict', data=row.to_json())
             # if samples_num % 100 == 0:
