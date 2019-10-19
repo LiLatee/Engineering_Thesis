@@ -3,9 +3,11 @@ import numpy as np
 import json
 import collections
 import time
+import requests
+import pickle
 
 import data_preprocessing as dp
-from client_SQLite import DatabaseSQLite
+# from client_SQLite import DatabaseSQLite
 from model_info import ModelInfo
 from client_redis import DatabaseRedis
 
@@ -31,7 +33,7 @@ class ModelSGDClassifier:
         self.last_sample_id: int = -1
         self.required_column_names_list: List[str] = dp.read_required_column_names()
         self.redis_DB: DatabaseRedis = DatabaseRedis()
-        self.db: DatabaseSQLite = DatabaseSQLite()
+        # self.db: DatabaseSQLite = DatabaseSQLite()
 
         self.load_model_if_exists()
         self.redis_DB.del_all_samples()
@@ -96,7 +98,10 @@ class ModelSGDClassifier:
         return y, probability
 
     def update_model(self) -> None:
-        samples_list_of_dicts = self.db.get_samples_to_update_model_as_list_of_dicts(self.last_sample_id)
+        # samples_list_of_dicts = self.db.get_samples_to_update_model_as_list_of_dicts(self.last_sample_id)
+        response = requests.request(method="GET", url='http://sqlite_api:8764/samples/?last_model_id=' + str(self.last_sample_id))
+        samples_list_of_dicts = json.loads(response.content) #todo
+
         x, y = dp.split_data_to_x_and_y(samples_list_of_dicts)
         x = self.pca.transform(x)
         adasyn = ADASYN(random_state=1)
@@ -123,7 +128,9 @@ class ModelSGDClassifier:
         # if self.model is None:
         #     print("LOG: " + "There is not model available. Must be created.")
 
-        new_version = self.db.get_last_version_of_specified_model('SGDClassifier') + 1 # todo usunąć hardcoded nazwę modelu
+        # new_version = self.db.get_last_version_of_specified_model('SGDClassifier') + 1 # todo usunąć hardcoded nazwę modelu
+        response = requests.request(method="GET", url='http://sqlite_api:8764/models/?model_name=SGDClassifier')
+        new_version = pickle.loads(response.content) #todo
 
         # zapisywanie modelu do sqlite
         model_info = ModelInfo()
@@ -134,7 +141,9 @@ class ModelSGDClassifier:
         model_info.model = self.model
         model_info.sc = self.sc
         model_info.pca = self.pca
-        self.db.insert_ModelInfo(model_info)
+        # self.db.insert_ModelInfo(model_info) #todo
+        requests.request(method='POST', url='http://sqlite_api:8764/models', data=pickle.dumps(model_info))
+
         print("LOG: saving model DONE")
 
         # zapisywanie modelu do pliku
@@ -181,7 +190,10 @@ class ModelSGDClassifier:
 
     def load_model_if_exists(self) -> None:
         # wczytywanie z sqlite
-        model_info = self.db.get_last_ModelInfo()
+        # model_info = self.db.get_last_ModelInfo() #todo
+        response = requests.request(method='GET', url='http://sqlite_api:8764/models/get_last')
+        model_info = pickle.loads(response.content)
+
         if model_info is None:
             return
         self.model = model_info.model

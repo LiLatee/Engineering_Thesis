@@ -5,6 +5,10 @@ import websockets
 import requests
 from redis_client import get_model_version
 import json
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+import time
+
 
 not_sorted_data_file_name = '../data/CriteoSearchData.csv'
 data_file_name = 'data/CriteoSearchData-sorted-no-duplicates.csv'
@@ -41,7 +45,7 @@ async def process_all_samples(websocket, path) -> None:
             data_file_name,
             sep='\t',
             chunksize=chunksize,
-            nrows=1000,
+            nrows=10000,
             skiprows=(1, train_model_samples_number),
             header=0,
             usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]):
@@ -49,7 +53,15 @@ async def process_all_samples(websocket, path) -> None:
             samples_num += 1
             # print(samples_num)
             await send_model_info_to_websocket(websocket, samples_num)
-            requests.request(method='POST', url='http://prediction_server:5000/predict', data=row.to_json())
+            session = requests.Session()
+            retry = Retry(connect=3, backoff_factor=0.5)
+            adapter = HTTPAdapter(max_retries=retry)
+            session.mount('http://', adapter)
+            session.mount('https://', adapter)
+            session.post(url="http://prediction_server:5000/predict", data=row.to_json())
+            time.sleep(0.2)
+
+            # requests.request(method='POST', url='http://prediction_server:5000/predict', data=row.to_json())
             # if samples_num % 100 == 0:
             #     requests.request(method='GET', url='http://prediction_server:5000/update_start', data=chunk.to_json())
 
@@ -84,7 +96,15 @@ def send_samples_for_model_training() -> None:
         header=0,
         usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
 
-    requests.request(method='POST', url='http://prediction_server:5000/fit', data=data.to_json(orient='records'))
+    session = requests.Session()
+    retry = Retry(connect=3, backoff_factor=0.5)
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    session.post(url="http://prediction_server:5000/fit", data=data.to_json(orient='records'))
+    # time.sleep(0.5)
+
+    # requests.request(method='POST', url='http://prediction_server:5000/fit', data=data.to_json(orient='records'))
     print('data for training was send. ' + str(data.shape))
 
 

@@ -1,3 +1,124 @@
+#version: '3'
+#
+#volumes:
+#  samples:
+#  models:
+#
+#services:
+#  cassandra:
+#    container_name: cassandra
+#    image: cassandra:3.11.4
+#    #    volumes:
+#    #      - "./cassandra-init.sh:/cassandra-init.sh"
+#    #    command: "sh /cassandra-init.sh"
+#    ports:
+#      - 9042:9042
+#    environment:
+#      - CASSANDRA_RPC_ADDRESS=0.0.0.0
+#    restart: always
+#    healthcheck:
+#      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+#
+#
+#  redis_service:
+#    container_name: redis_service
+#    image: redis
+#    ports:
+#      - 6379:6379
+#    volumes:
+#      - ../data/redis:/data
+#    entrypoint: redis-server --appendonly yes
+#    restart: always
+#
+#  prediction_server:
+#    container_name: prediction_server
+#    build: ./prediction_server
+#    volumes:
+#      - ./prediction_server:/usr/src/app
+#      - "samples:/data"
+#      - "models:/data"
+#    depends_on:
+#      - cassandra
+##      - cassandra_api
+#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "api.py"]
+#    ports:
+#      - 5000:5000
+#
+#  fit_model_server:
+#    container_name: fit_model_server
+#    build: fit_model_server
+#    volumes:
+#      - ./fit_model_server:/usr/src/app
+#      - "samples:/data"
+#      - "models:/data"
+#    depends_on:
+#      - cassandra
+#    #      - cassandra_api
+#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_fit_model.py"]
+#    ports:
+#      - 5001:5001
+#
+#  update_model_server:
+#    container_name: update_model_server
+#    build: update_model_server
+#    volumes:
+#      - ./update_model_server:/usr/src/app
+#      - "samples:/data"
+#      - "models:/data"
+#    depends_on:
+#      - cassandra
+#    #      - cassandra_api
+#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_update_model.py"]
+#    ports:
+#      - 5002:5002
+#
+#  sqlite_api:
+#    container_name: sqlite_api
+#    build: sqlite_api
+#    volumes:
+#      - ./sqlite_api:/usr/src/app
+#      - "samples:/data"
+#      - "models:/data"
+#    depends_on:
+#      - cassandra
+#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "sqlite_api.py"]
+#    ports:
+#      - 8764:8764
+#
+##  worker:
+##    image: engineeringthesis_prediction_server:latest
+##    command: rq worker --url redis://redis_service:6379 queue_update_model
+##    depends_on:
+##      - redis_service
+##    links:
+##      - redis_service
+#
+#  data_provider:
+#    container_name: data_provider
+#    build: data_provider
+#    volumes:
+#      - ./data_provider:/usr/src/app
+#    ports:
+#      - 8765:8765
+#
+#  evaluation_server:
+#    container_name: evaluation_server
+#    build: ./evaluation_server
+#    volumes:
+#      - ./evaluation_server:/usr/src/app
+#      - "samples:/data"
+#      - "models:/data"
+#    depends_on:
+#      - cassandra
+#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_evaluation_server.py"]
+#    ports:
+#      - 8766:8766
+#    stdin_open: true
+#    tty: true
+
+##############################################
+#BEZ CASSANDRY
+##############################################
 version: '3'
 
 volumes:
@@ -5,20 +126,15 @@ volumes:
   models:
 
 services:
-  cassandra:
-    container_name: cassandra
-    image: cassandra:3.11.4
-    #    volumes:
-    #      - "./cassandra-init.sh:/cassandra-init.sh"
-    #    command: "sh /cassandra-init.sh"
+  sqlite_api:
+    container_name: sqlite_api
+    build: sqlite_api
+    volumes:
+      - ./sqlite_api:/usr/src/app
+      - "samples:/data"
+      - "models:/data"
     ports:
-      - 9042:9042
-    environment:
-      - CASSANDRA_RPC_ADDRESS=0.0.0.0
-    restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
-
+      - 8764:8764
 
   redis_service:
     container_name: redis_service
@@ -38,9 +154,8 @@ services:
       - "samples:/data"
       - "models:/data"
     depends_on:
-      - cassandra
-#      - cassandra_api
-    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "api.py"]
+      - sqlite_api
+    command: ["./wait-for-it.sh", "sqlite_api:8764", "--", "python", "api.py"]
     ports:
       - 5000:5000
 
@@ -52,9 +167,8 @@ services:
       - "samples:/data"
       - "models:/data"
     depends_on:
-      - cassandra
-    #      - cassandra_api
-    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_fit_model.py"]
+        - sqlite_api
+    command: ["./wait-for-it.sh", "sqlite_api:8764", "--", "python", "main_fit_model.py"]
     ports:
       - 5001:5001
 
@@ -66,36 +180,18 @@ services:
       - "samples:/data"
       - "models:/data"
     depends_on:
-      - cassandra
-    #      - cassandra_api
-    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_update_model.py"]
+      - sqlite_api
+    command: ["./wait-for-it.sh", "sqlite_api:8764", "--", "python", "main_update_model.py"]
     ports:
       - 5002:5002
-
-  #  cassandra_api:
-#    container_name: cassandra_api-not-used
-#    build: cassandra_api-not-used
-#    volumes:
-#      - ./cassandra_api-not-used:/usr/src/app
-#    depends_on:
-#      - cassandra
-#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "cassandra_api-not-used.py"]
-#    ports:
-#      - 8764:8764
-
-#  worker:
-#    image: engineeringthesis_prediction_server:latest
-#    command: rq worker --url redis://redis_service:6379 queue_update_model
-#    depends_on:
-#      - redis_service
-#    links:
-#      - redis_service
 
   data_provider:
     container_name: data_provider
     build: data_provider
     volumes:
       - ./data_provider:/usr/src/app
+    depends_on:
+      - redis_service
     ports:
       - 8765:8765
 
@@ -106,9 +202,6 @@ services:
       - ./evaluation_server:/usr/src/app
       - "samples:/data"
       - "models:/data"
-    depends_on:
-      - cassandra
-    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_evaluation_server.py"]
     ports:
       - 8766:8766
     stdin_open: true

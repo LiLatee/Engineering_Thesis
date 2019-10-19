@@ -3,7 +3,6 @@ import sqlite3
 import json
 import pickle
 import model_info
-import time
 from sqlite3 import Error
 from typing import Union, Dict, List
 from model_info import ModelInfo
@@ -28,7 +27,7 @@ class DatabaseSQLite:
             return d
 
         try:
-            conn = sqlite3.connect(self.db_file_samples)
+            conn = sqlite3.connect(self.db_file_samples, timeout=60)
             conn.row_factory = dict_factory
             return conn
         except Error as e:

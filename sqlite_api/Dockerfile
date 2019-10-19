@@ -2,4 +2,4 @@ FROM python:3-onbuild
 COPY . /usr/src/app
 #ENV PATH=$PATH:"../Engineering_Thesis"
 #ENV PYTHONPATH "../Engineering_Thesis"
-CMD ["python", "cassandra_api.py"]
+CMD ["python", "sqlite_api.py"]

@@ -40,6 +40,8 @@ class EvaluationServer:
         roc_auc_score = 0
         if self.num_processed_samples > 50:
             roc_auc_score = self.calculate_roc_auc_score(None, None)
+
+        self.redis.del_all_samples()
         return {
             "processed_samples": self.num_processed_samples,
             "correct_predictions": self.correct_predictions,
