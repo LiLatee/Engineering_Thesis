@@ -8,7 +8,6 @@ Flask==1.1.1
 requests==2.22.0
 redis==3.3.5
 rq==1.1.0
-cassandra-driver==3.18
 cqlengine==0.21.0
 imbalanced-learn==0.5.0
 pyzmq==18.1.0
