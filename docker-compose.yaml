@@ -137,8 +137,8 @@ services:
     build: sqlite_api
     volumes:
       - ./sqlite_api:/usr/src/app
-      - "samples:/data"
-      - "models:/data"
+      - "samples:/data_samples"
+      - "models:/data_models"
     ports:
       - 8764:8764
 
@@ -157,8 +157,8 @@ services:
     build: ./prediction_server
     volumes:
       - ./prediction_server:/usr/src/app
-      - "samples:/data"
-      - "models:/data"
+      - "samples:/data_samples"
+      - "models:/data_models"
     depends_on:
       - sqlite_api
       - rabbitmq
@@ -171,8 +171,8 @@ services:
     build: fit_model_server
     volumes:
       - ./fit_model_server:/usr/src/app
-      - "samples:/data"
-      - "models:/data"
+      - "samples:/data_samples"
+      - "models:/data_models"
     depends_on:
         - sqlite_api
     command: ["./wait-for-it.sh", "sqlite_api:8764", "--", "python", "main_fit_model.py"]
@@ -184,8 +184,8 @@ services:
     build: update_model_server
     volumes:
       - ./update_model_server:/usr/src/app
-      - "samples:/data"
-      - "models:/data"
+      - "samples:/data_samples"
+      - "models:/data_models"
     depends_on:
       - sqlite_api
     command: ["./wait-for-it.sh", "sqlite_api:8764", "--", "python", "main_update_model.py"]
@@ -207,8 +207,8 @@ services:
     build: ./evaluation_server
     volumes:
       - ./evaluation_server:/usr/src/app
-      - "samples:/data"
-      - "models:/data"
+      - "samples:/data_samples"
+      - "models:/data_models"
     ports:
       - 8766:8766
     stdin_open: true
