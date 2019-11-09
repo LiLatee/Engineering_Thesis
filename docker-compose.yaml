@@ -40,7 +40,7 @@
 #    depends_on:
 #      - cassandra
 ##      - cassandra_api
-#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "api.py"]
+#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "api2.py"]
 #    ports:
 #      - 5000:5000
 #
@@ -126,6 +126,12 @@ volumes:
   models:
 
 services:
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:latest
+    ports:
+     - 5100:5100
+
   sqlite_api:
     container_name: sqlite_api
     build: sqlite_api
@@ -155,7 +161,8 @@ services:
       - "models:/data"
     depends_on:
       - sqlite_api
-    command: ["./wait-for-it.sh", "sqlite_api:8764", "--", "python", "api.py"]
+      - rabbitmq
+    command: ["./wait-for-it.sh", "sqlite_api:8764", "rabbitmq:5672", "--", "python", "api.py"]
     ports:
       - 5000:5000
 
