@@ -26,16 +26,22 @@ RowAsDictType = Dict[str, Union[str, float, int]]
 
 class ModelSGDClassifier:
 
-    def __init__(self) -> None:
-        self.model: SGDClassifier = None
-        self.sc: StandardScaler = None
-        self.pca: PCA = None
-        self.last_sample_id: int = -1
+    def __init__(self, model_info: ModelInfo = None) -> None:
+        if model_info is None:
+            self.model: SGDClassifier = None
+            self.sc: StandardScaler = None
+            self.pca: PCA = None
+            self.last_sample_id: int = -1
+            self.load_model_if_exists()
+        else:
+            self.model: SGDClassifier = model_info.model
+            self.sc: StandardScaler = model_info.sc
+            self.pca: PCA = model_info.pca
+            self.last_sample_id: int = model_info.last_sample_id
+
         self.required_column_names_list: List[str] = dp.read_required_column_names()
         self.redis_DB: DatabaseRedis = DatabaseRedis()
         # self.db: DatabaseSQLite = DatabaseSQLite()
-
-        self.load_model_if_exists()
         self.redis_DB.del_all_samples()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:

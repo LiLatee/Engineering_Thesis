@@ -134,127 +134,34 @@ if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(server_waiting_for_start)
     # asyncio.get_event_loop().run_forever()
 
-
-    # data = pd.read_csv(
-    #     data_file_name,
-    #     sep='\t',
-    #     nrows=1000,
-    #     header=0,
-    #     usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
-    #
-    # session = requests.Session()
-    # retry = Retry(connect=3, backoff_factor=0.5)
-    # adapter = HTTPAdapter(max_retries=retry)
-    # session.mount('http://', adapter)
-    # session.mount('https://', adapter)
-    # session.post(url="http://0.0.0.0:5000/fit", data=data.to_json(orient='records'))
-    # # time.sleep(0.5)
-    #
-    # # requests.request(method='POST', url='http://prediction_server:5000/fit', data=data.to_json(orient='records'))
-    # print('data for training was send. ' + str(data.shape))
-
-
-
-    # chunksize = 1
-    # samples_num = 0
-    # list_of_times = []
-    # for chunk in pd.read_csv(
-    #         data_file_name,
-    #         sep='\t',
-    #     nrows=1000,
-    #         chunksize=chunksize,
-    #         skiprows=(1, train_model_samples_number),
-    #         header=0,
-    #         usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]):
-    #     for index, row in chunk.iterrows():
-    #         samples_num += 1
-    #         # print(samples_num)
-    #         session = requests.Session()
-    #         retry = Retry(connect=3, backoff_factor=0.5)
-    #         adapter = HTTPAdapter(max_retries=retry)
-    #         session.mount('http://', adapter)
-    #         session.mount('https://', adapter)
-    #         session.post(url="http://0.0.0.0:5000/predict", data=row.to_json())
-    #         # time.sleep(0.02)
-
-
-
     import pika
-    import uuid
-
-    class PredictRpcClient(object):
-
-        def __init__(self):
-            self.connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host='172.18.0.5'))
-
-            self.channel = self.connection.channel()
-
-            result = self.channel.queue_declare(queue='', exclusive=True)
-            self.callback_queue = result.method.queue
-
-            self.channel.basic_consume(
-                queue=self.callback_queue,
-                on_message_callback=self.on_response,
-                auto_ack=True)
-
-        def on_response(self, ch, method, props, body):
-            if self.corr_id == props.correlation_id:
-                self.response = body
-
-        def call(self, sample):
-            self.response = None
-            self.corr_id = str(uuid.uuid4())
-            self.channel.basic_publish(
-                exchange='',
-                routing_key='prediction_queue',
-                properties=pika.BasicProperties(
-                    reply_to=self.callback_queue,
-                    correlation_id=self.corr_id,
-                ),
-                body=str(sample))
-            while self.response is None:
-                self.connection.process_data_events()
-            return self.response
-
-
-    predict_rpc = PredictRpcClient()
-
-
-    # data = pd.read_csv(
-    #     data_file_name,
-    #     sep='\t',
-    #     nrows=1000,
-    #     header=0,
-    #     usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
-    #
-    # session = requests.Session()
-    # retry = Retry(connect=3, backoff_factor=0.5)
-    # adapter = HTTPAdapter(max_retries=retry)
-    # session.mount('http://', adapter)
-    # session.mount('https://', adapter)
-    # session.post(url="http://0.0.0.0:5000/fit", data=data.to_json(orient='records'))
-    # # time.sleep(0.5)
-    #
-    # # requests.request(method='POST', url='http://prediction_server:5000/fit', data=data.to_json(orient='records'))
-    # print('data for training was send. ' + str(data.shape))
-    #
     import time
+
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(host='172.18.0.2'))
+    channel = connection.channel()
+    channel.exchange_declare(exchange='prediction_queue_fanout', exchange_type='fanout')
+
+    print("Sending...")
     start = time.time()
     chunksize = 1
     samples_num = 0
     list_of_times = []
-    for chunk in pd.read_csv(
+    data = pd.read_csv(
             data_file_name,
             sep='\t',
-        nrows=1000,
-            chunksize=chunksize,
+            nrows=10000,
             skiprows=(1, train_model_samples_number),
             header=0,
-            usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]):
-        for index, row in chunk.iterrows():
-            samples_num += 1
-            # print(" [x] Requesting ")
-            response = predict_rpc.call(row.to_json())
-            # print(" [.] Got %r" % response)
+            usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+    x= None
+    for index, row in data.iterrows():
+        channel.basic_publish(exchange='prediction_queue_fanout', routing_key='', body=row.to_json())
+        # time.sleep(0.01)
+        x = index
+    print(x)
+
+        # print(" [.] Got %r" % response)
     print(time.time()-start)
+
+    connection.close()

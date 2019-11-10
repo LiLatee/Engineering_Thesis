@@ -3,3 +3,4 @@ pandas==0.25.0
 websockets==8.0.2
 requests==2.22.0
 redis==3.3.5
+pika==1.1.0
