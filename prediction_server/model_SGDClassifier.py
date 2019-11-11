@@ -7,7 +7,7 @@ import requests
 import pickle
 
 import data_preprocessing as dp
-# from client_SQLite import DatabaseSQLite
+from client_SQLite import DatabaseSQLite
 from model_info import ModelInfo
 from client_redis import DatabaseRedis
 
@@ -41,7 +41,7 @@ class ModelSGDClassifier:
 
         self.required_column_names_list: List[str] = dp.read_required_column_names()
         self.redis_DB: DatabaseRedis = DatabaseRedis()
-        # self.db: DatabaseSQLite = DatabaseSQLite()
+        self.db: DatabaseSQLite = DatabaseSQLite()
         self.redis_DB.del_all_samples()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:
@@ -99,7 +99,7 @@ class ModelSGDClassifier:
         sample_json = json.dumps(sample_dict)
 
         self.redis_DB.rpush_sample(sample_json)
-        # self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
+        self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
 
         return y, probability
 

@@ -1,15 +1,42 @@
 import pika
 import requests
 import threading
+import zmq
 from model_SGDClassifier import ModelSGDClassifier
+import json
 import time
+import pickle
+
+context = zmq.Context()
+fit_socket = context.socket(zmq.PAIR)
+fit_socket.connect("tcp://fit_model_server:5001")
+update_socket = context.socket(zmq.PUSH)
+update_socket.connect("tcp://update_model_server:5002")
 
 
-def worker(model_id_or_name): # todo wybieranie modelu
-    model = ModelSGDClassifier()  # użyć model_id_or_name
+counter_to_update_model = 0
+counter_to_load_model = 0
+
+
+def worker(ModelInfo_object): # todo wybieranie modelu
+    model = ModelSGDClassifier(ModelInfo_object)  # użyć model_id_or_name
 
     def callback(ch, method, properties, body):
+        global counter_to_load_model
+        global counter_to_update_model
+
+        if counter_to_load_model >= 100:
+            model.load_model_if_exists()
+            print("loaded model")
+            counter_to_load_model = 0
+        if counter_to_update_model >= 200:
+            print("updating model started")
+            update_socket.send_string("update_model")
+            counter_to_update_model = 0
+
         model.predict(sample_json=body)
+        counter_to_update_model = counter_to_update_model + 1
+        counter_to_load_model = counter_to_load_model + 1
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))  # todo zmienić na kontener
@@ -63,8 +90,34 @@ def worker(model_id_or_name): # todo wybieranie modelu
 
 
 if __name__  == "__main__":
+    pass
     # channel.start_consuming()
-    all_models = [1,2,3,4]
-    for model in all_models:
-        thread = threading.Thread(target=worker, args=('model_id',))
+
+    #start all models in db
+    # response = requests.request(method="GET",
+    #                             url='http://sqlite_api:8764/models/get_as_list_of_ModelInfo')
+    # all_models = pickle.loads(response.content)
+    # for model in all_models:
+    #     thread = threading.Thread(target=worker, args=(model,))
+    #     thread.start()
+
+    # start first model
+    response = requests.request(method='GET', url='http://sqlite_api:8764/models/get_last')
+    model_info = pickle.loads(response.content)
+    model = ModelSGDClassifier(model_info)
+    thread = threading.Thread(target=worker, args=(model,))
+    thread.start()
+
+    context = zmq.Context()
+    info_receiver = context.socket(zmq.PULL)
+    info_receiver.bind("tcp://0.0.0.0:5003")
+    while True:
+        info_receiver.recv_string()  # waits for signal to start new model
+        file = open("test.txt", "a+")
+        file.write("omg")
+        file.close()
+        response = requests.request(method='GET', url='http://sqlite_api:8764/models/get_last')
+        model_info = pickle.loads(response.content)
+        model = ModelSGDClassifier(model_info)
+        thread = threading.Thread(target=worker, args=(model,))
         thread.start()

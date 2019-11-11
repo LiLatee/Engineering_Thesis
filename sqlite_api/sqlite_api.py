@@ -55,11 +55,11 @@ def get_last_version_of_specified_model():
     model_name = request.args.get("model_name")
     return pickle.dumps(sqlite.get_last_version_of_specified_model(model_name))
 
-@app.route('/models', methods=['GET'])
+@app.route('/models/get_as_list_of_dicts', methods=['GET'])
 def get_all_models_history_as_list_of_dicts():
     return pickle.dumps(sqlite.get_all_models_history_as_list_of_dicts())
 
-@app.route('/models', methods=['GET'])
+@app.route('/models/get_as_list_of_ModelInfo', methods=['GET'])
 def get_all_models_history_as_list_of_ModelInfo():
     return pickle.dumps(sqlite.get_all_models_history_as_list_of_ModelInfo())
 

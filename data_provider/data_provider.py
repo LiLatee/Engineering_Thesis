@@ -134,6 +134,29 @@ if __name__ == "__main__":
     # asyncio.get_event_loop().run_until_complete(server_waiting_for_start)
     # asyncio.get_event_loop().run_forever()
 
+
+    # 1. NAUCZ PIERWSZY MODEL
+    # import zmq
+    # context = zmq.Context()
+    # fit_socket = context.socket(zmq.PAIR)
+    # fit_socket.connect("tcp://127.0.0.1:5001")
+    #
+    #
+    #
+    # data = pd.read_csv(
+    #     data_file_name,
+    #     sep='\t',
+    #     nrows=1000,
+    #     header=0,
+    #     usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+    #
+    # print('sending...')
+    # fit_socket.send_string(data.to_json(orient='records'))  # convert from bytes to string
+    # result = fit_socket.recv()  # wait for end of fitting
+    # print('done' + str(result))
+
+
+    # 2. WYŚLIJ PRÓBKI DO PREDYKCJI
     import pika
     import time
 
@@ -150,7 +173,7 @@ if __name__ == "__main__":
     data = pd.read_csv(
             data_file_name,
             sep='\t',
-            nrows=10000,
+            nrows=300,
             skiprows=(1, train_model_samples_number),
             header=0,
             usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])

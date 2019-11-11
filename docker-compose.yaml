@@ -130,7 +130,7 @@ services:
     container_name: rabbitmq
     image: rabbitmq:latest
     ports:
-     - 5100:5100
+      - 5100:5100
 
   sqlite_api:
     container_name: sqlite_api
@@ -165,6 +165,7 @@ services:
     command: ["./wait-for-it.sh", "sqlite_api:8764", "rabbitmq:5672", "--", "python", "api.py"]
     ports:
       - 5000:5000
+      - 5003:5003
 
   fit_model_server:
     container_name: fit_model_server

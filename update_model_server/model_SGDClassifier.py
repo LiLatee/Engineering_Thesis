@@ -129,7 +129,7 @@ class ModelSGDClassifier:
         #     print("LOG: " + "There is not model available. Must be created.")
 
         # new_version = self.db.get_last_version_of_specified_model('SGDClassifier') + 1 # todo usunąć hardcoded nazwę modelu
-        response = requests.request(method="GET", url='http://sqlite_api:8764/models?model_name=SGDClassifier')
+        response = requests.request(method="GET", url='http://sqlite_api:8764/models/?model_name=SGDClassifier')
         new_version = pickle.loads(response.content) #todo
 
         # zapisywanie modelu do sqlite
