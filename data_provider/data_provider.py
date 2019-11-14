@@ -1,8 +1,6 @@
 import asyncio
 import websockets
 import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 import threading
 import data_generator
 
@@ -22,40 +20,30 @@ async def process_all_samples() -> None:
     generator = data_generator.data_generator()
     threads = list()
     for index in range(number_of_threads):
-        thread = threading.Thread(target=thread_function, args=(index, generator))
+        thread = threading.Thread(target=thread_function, args=(generator, index))
         threads.append(thread)
         thread.start()
 
-    for index, thread in enumerate(threads):
+    for thread in threads:
         thread.join()
     print("All threads have ended")
 
 
 def send_samples_for_model_training() -> None:
     data = data_generator.get_train_data()
-    session = requests.Session()
-    retry = Retry(connect=3, backoff_factor=0.5)
-    adapter = HTTPAdapter(max_retries=retry)
-    session.mount('http://', adapter)
-    session.mount('https://', adapter)
-    session.post(url="http://prediction_server:5000/fit", data=data.to_json(orient='records'))
+    requests.post(url="http://prediction_server:5000/fit", data=data.to_json(orient='records'))
     print('Data for training was send. ' + str(data.shape))
 
 
-def thread_function(index, generator):
-    print(f"Thread id={threading.current_thread()} started")
-    session = requests.Session()
-    retry = Retry(connect=3, backoff_factor=0.5)
-    adapter = HTTPAdapter(max_retries=retry)
-    session.mount('http://', adapter)
-    session.mount('https://', adapter)
+def thread_function(generator, index):
+    print(f"{threading.current_thread()} started")
     while True:
         try:
             data = next(generator)
-            session.post(url="http://prediction_server:5000/predict", data=data.to_json())
-            print(f"Thread id={threading.current_thread()} - sent data to /predict")
+            requests.post(url="http://prediction_server:5000/predict", data=data.to_json())
+            print(f"{threading.current_thread()} sent data to /predict")
         except StopIteration as e:
-            print(f"Thread {index}: {e}")
+            print(f"{threading.current_thread()}: {e}")
             break
 
 
