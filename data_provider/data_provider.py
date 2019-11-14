@@ -173,7 +173,7 @@ if __name__ == "__main__":
     data = pd.read_csv(
             data_file_name,
             sep='\t',
-            nrows=300,
+            nrows=10000,
             skiprows=(1, train_model_samples_number),
             header=0,
             usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
@@ -182,6 +182,7 @@ if __name__ == "__main__":
         channel.basic_publish(exchange='prediction_queue_fanout', routing_key='', body=row.to_json())
         # time.sleep(0.01)
         x = index
+        time.sleep(0.01)
     print(x)
 
         # print(" [.] Got %r" % response)

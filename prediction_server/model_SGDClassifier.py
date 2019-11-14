@@ -34,13 +34,14 @@ class ModelSGDClassifier:
             self.last_sample_id: int = -1
             self.load_model_if_exists()
         else:
+            self.ModelInfo: ModelInfo = model_info
             self.model: SGDClassifier = model_info.model
             self.sc: StandardScaler = model_info.sc
             self.pca: PCA = model_info.pca
             self.last_sample_id: int = model_info.last_sample_id
 
         self.required_column_names_list: List[str] = dp.read_required_column_names()
-        self.redis_DB: DatabaseRedis = DatabaseRedis()
+        self.redis_DB: DatabaseRedis = DatabaseRedis(model_id=self.ModelInfo.id)
         self.db: DatabaseSQLite = DatabaseSQLite()
         self.redis_DB.del_all_samples()
 
@@ -98,7 +99,7 @@ class ModelSGDClassifier:
         sample_dict['probabilities'] = json.dumps(list(probability))
         sample_json = json.dumps(sample_dict)
 
-        self.redis_DB.rpush_sample(sample_json)
+        self.redis_DB.rpush_sample(json_sample=sample_json)
         self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
 
         return y, probability

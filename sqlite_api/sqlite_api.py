@@ -63,7 +63,10 @@ def get_all_models_history_as_list_of_dicts():
 def get_all_models_history_as_list_of_ModelInfo():
     return pickle.dumps(sqlite.get_all_models_history_as_list_of_ModelInfo())
 
-
+@app.route('/models/get_id_of_last_specified_model/', methods=['GET'])
+def get_id_of_last_specified_model():
+    model_name = request.args.get("model_name")
+    return str(sqlite.get_id_of_last_specified_model(model_name))
 
 @app.route('/restart',)
 def restart():

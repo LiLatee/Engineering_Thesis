@@ -206,6 +206,17 @@ class DatabaseSQLite:
         else:
             return int(result['version'])
 
+    def get_id_of_last_specified_model(self, model_name: str) -> int:
+        conn = self.create_connection_models()
+        sql_query = 'SELECT id from models WHERE timestamp = (SELECT max(timestamp) FROM models WHERE name = "' + model_name + '")'
+        result = conn.execute(sql_query).fetchone()
+        conn.commit() #todo chyba można wywalić w wielu miejscach
+        conn.close()
+        if result is None:
+            return -1
+        else:
+            return int(result['id'])
+
     def get_samples_to_update_model_as_list_of_dicts(self, last_sample_id) -> List[RowAsDictType]:
         conn = self.create_connection_samples()
         # last_sample_id = self.get_last_model_info().last_sample_id
