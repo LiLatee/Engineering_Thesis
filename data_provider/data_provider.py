@@ -3,12 +3,9 @@ import pandas as pd
 import asyncio
 import websockets
 import requests
-from redis_client import get_model_version
 import json
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-import time
-
 
 not_sorted_data_file_name = '../data/CriteoSearchData.csv'
 data_file_name = 'data/CriteoSearchData-sorted-no-duplicates.csv'
@@ -136,24 +133,23 @@ if __name__ == "__main__":
 
 
     # 1. NAUCZ PIERWSZY MODEL
-    # import zmq
-    # context = zmq.Context()
-    # fit_socket = context.socket(zmq.PAIR)
-    # fit_socket.connect("tcp://127.0.0.1:5001")
-    #
-    #
-    #
-    # data = pd.read_csv(
-    #     data_file_name,
-    #     sep='\t',
-    #     nrows=1000,
-    #     header=0,
-    #     usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
-    #
-    # print('sending...')
-    # fit_socket.send_string(data.to_json(orient='records'))  # convert from bytes to string
-    # result = fit_socket.recv()  # wait for end of fitting
-    # print('done' + str(result))
+    import zmq
+    context = zmq.Context()
+    fit_socket = context.socket(zmq.PAIR)
+    fit_socket.connect('tcp://127.0.0.1:5001')
+
+    data = pd.read_csv(
+        data_file_name,
+        sep='\t',
+        nrows=1000,
+        header=0,
+        usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+
+    print('sending...')
+    fit_socket.send_string(data.to_json(orient='records'))  # convert from bytes to string
+
+    result = fit_socket.recv()  # wait for end of fitting
+    print('done' + str(result))
 
 
     # 2. WYŚLIJ PRÓBKI DO PREDYKCJI
@@ -161,7 +157,7 @@ if __name__ == "__main__":
     import time
 
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='172.18.0.2'))
+        pika.ConnectionParameters(host='172.18.0.5'))
     channel = connection.channel()
     channel.exchange_declare(exchange='prediction_queue_fanout', exchange_type='fanout')
 

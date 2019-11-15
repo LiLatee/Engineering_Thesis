@@ -154,7 +154,7 @@ services:
 
   prediction_server:
     container_name: prediction_server
-    build: ./prediction_server
+    build: prediction_server
     volumes:
       - ./prediction_server:/usr/src/app
       - "samples:/data_samples"
@@ -162,7 +162,7 @@ services:
     depends_on:
       - sqlite_api
       - rabbitmq
-    command: ["./wait-for-it.sh", "sqlite_api:8764", "rabbitmq:5672", "--", "python", "api.py"]
+    command: ["./wait-for-it.sh", "sqlite_api:8764", "rabbitmq:5672", "--", "python", "main_prediction_server.py"]
     ports:
       - 5000:5000
       - 5003:5003

@@ -12,14 +12,8 @@ class DatabaseRedis:
         self.redis.rpush('samples_mode_' + str(self.model_id), json_sample)
 
     def get_all_samples_as_list_of_bytes(self):
-        # list_of_bytes = self.redis.lrange('samples', 0, -1)
-        # list_of_dicts = []
-        # for x in list_of_bytes:
-        #     list_of_dicts.append(json.loads(x))
-        # return list_of_dicts
-
         result_list = self.redis.lrange('samples_mode_' + str(self.model_id), 0, -1)
-        # self.redis.ltrim('samples_mode_' + str(self.model_id), len(result_list), -1)
+        self.redis.ltrim('samples_mode_' + str(self.model_id), len(result_list), -1)
         return result_list
 
     def del_all_samples(self):

@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import sqlite3
 import json
@@ -17,6 +18,13 @@ class DatabaseSQLite:
     def __init__(self):
         self.db_file_samples = '/data_samples/samples.db' # dla systemu: '/data_samples/samples.db', dla testów: 'data_samples/samples.db'
         self.db_file_models = '/data_models/models.db'
+
+        if os.path.exists(self.db_file_samples):
+            os.remove(self.db_file_samples)
+
+        if os.path.exists(self.db_file_models):
+            os.remove(self.db_file_models)
+
         self.create_tables()
 
     def create_connection_samples(self) -> sqlite3.Connection:
@@ -219,16 +227,13 @@ class DatabaseSQLite:
 
     def get_samples_to_update_model_as_list_of_dicts(self, last_sample_id) -> List[RowAsDictType]:
         conn = self.create_connection_samples()
-        # last_sample_id = self.get_last_model_info().last_sample_id
-        # df = pd.read_sql_query('SELECT * FROM samples WHERE id >' + str(last_sample_id), conn)
-        # return df
+
         cur = conn.cursor()
-        # query = 'SELECT * FROM samples WHERE id > ' + str(last_sample_id)
         cur.execute('SELECT * FROM samples WHERE id > (?)', (str(last_sample_id),))
         list_of_dicts = cur.fetchall()
         conn.commit()
         conn.close()
-        for sample in list_of_dicts:#todo to samo z predicted z str na int? zmienić w bazie
+        for sample in list_of_dicts:  #todo to samo z predicted z str na int? zmienić w bazie
             sample['probabilities'] = json.loads(sample['probabilities'])
         return list_of_dicts
 
