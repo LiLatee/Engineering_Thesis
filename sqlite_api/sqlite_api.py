@@ -1,7 +1,5 @@
 from flask import Flask, request, jsonify
-# from client_cass import CassandraClient
 from client_SQLite import DatabaseSQLite
-import json
 import pickle
 
 app = Flask(__name__)

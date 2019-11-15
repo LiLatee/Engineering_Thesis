@@ -58,17 +58,17 @@
 #    ports:
 #      - 5001:5001
 #
-#  update_model_server:
-#    container_name: update_model_server
-#    build: update_model_server
+#  build_and_update_model_server:
+#    container_name: build_and_update_model_server
+#    build: build_and_update_model_server
 #    volumes:
-#      - ./update_model_server:/usr/src/app
+#      - ./build_and_update_model_server:/usr/src/app
 #      - "samples:/data"
 #      - "models:/data"
 #    depends_on:
 #      - cassandra
 #    #      - cassandra_api
-#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_update_model.py"]
+#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_build_and_update_model.py"]
 #    ports:
 #      - 5002:5002
 #
@@ -167,31 +167,19 @@ services:
       - 5000:5000
       - 5003:5003
 
-  fit_model_server:
-    container_name: fit_model_server
-    build: fit_model_server
+  build_and_update_model_server:
+    container_name: build_and_update_model_server
+    build: build_and_update_model_server
     volumes:
-      - ./fit_model_server:/usr/src/app
-      - "samples:/data_samples"
-      - "models:/data_models"
-    depends_on:
-        - sqlite_api
-    command: ["./wait-for-it.sh", "sqlite_api:8764", "--", "python", "main_fit_model.py"]
-    ports:
-      - 5001:5001
-
-  update_model_server:
-    container_name: update_model_server
-    build: update_model_server
-    volumes:
-      - ./update_model_server:/usr/src/app
+      - ./build_and_update_model_server:/usr/src/app
       - "samples:/data_samples"
       - "models:/data_models"
     depends_on:
       - sqlite_api
-    command: ["./wait-for-it.sh", "sqlite_api:8764", "--", "python", "main_update_model.py"]
+    command: ["./wait-for-it.sh", "sqlite_api:8764", "--", "python", "main_build_and_update_model.py"]
     ports:
       - 5002:5002
+      - 5001:5001
 
   data_provider:
     container_name: data_provider

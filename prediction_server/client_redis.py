@@ -1,6 +1,4 @@
 import redis
-import json
-
 
 class DatabaseRedis:
     def __init__(self, model_id):

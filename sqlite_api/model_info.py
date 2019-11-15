@@ -1,5 +1,3 @@
-import time
-
 from sklearn.linear_model import SGDClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA

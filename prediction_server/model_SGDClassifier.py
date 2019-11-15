@@ -2,7 +2,7 @@ import numpy as np
 import json
 
 import data_preprocessing as dp
-from client_SQLite import DatabaseSQLite
+# from client_SQLite import DatabaseSQLite
 from model_info import ModelInfo
 from client_redis import DatabaseRedis
 
@@ -27,7 +27,7 @@ class ModelSGDClassifier:
         self.redis_DB: DatabaseRedis = DatabaseRedis(model_id=self.ModelInfo.id)
         self.redis_DB.del_all_samples()
         self.required_column_names_list: List[str] = dp.read_required_column_names()
-        self.db: DatabaseSQLite = DatabaseSQLite() # todo usunąć
+        # self.db: DatabaseSQLite = DatabaseSQLite() # todo usunąć
 
     def predict(self, sample_json: JSONType) -> Tuple[np.ndarray, np.ndarray]:
         sample_dict = json.loads(sample_json)
@@ -47,7 +47,7 @@ class ModelSGDClassifier:
         sample_json = json.dumps(sample_dict)
 
         self.redis_DB.rpush_sample(json_sample=sample_json)
-        self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
+        # self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
 
         return y, probability
 

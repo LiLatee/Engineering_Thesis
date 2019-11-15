@@ -13,24 +13,16 @@ context = zmq.Context()
 # fit_socket = context.socket(zmq.PAIR)
 # fit_socket.connect("tcp://fit_model_server:5001")
 update_socket = context.socket(zmq.PUSH)
-update_socket.connect("tcp://update_model_server:5002")
+update_socket.connect("tcp://build_and_update_model_server:5002")
 
 
 list_counter_to_update_model = [0] * 9 # liczba równoległych modeli -1
 
-def worker(ModelInfo_object):
+def start_new_model(ModelInfo_object):
     model = ModelSGDClassifier(ModelInfo_object)
 
     def callback(ch, method, properties, body):
         global list_counter_to_update_model
-        # file = open("test.txt", 'a+')
-        # try:
-        #     file.write(str(list_counter_to_update_model) + '\t')
-        #     file.write(str(ModelInfo_object.id) + '\t')
-        #     file.write(str(type(ModelInfo_object.id)) + '\n')
-        #     file.write(str(list_counter_to_update_model[ModelInfo_object.id]) + '\n')
-        # except Exception as e:
-        #     file.write("EXCEPTION: " + str(e) + "\n")
 
         if list_counter_to_update_model[ModelInfo_object.id] >= NUMBER_OF_SAMPLES_BEFORE_UPDATE:
             print("updating model started")
@@ -68,5 +60,5 @@ if __name__  == "__main__":
         info_receiver.recv_string()  # waits for signal to start new model
         response = requests.request(method='GET', url='http://sqlite_api:8764/models/get_last')
         model_info = pickle.loads(response.content)
-        thread = threading.Thread(target=worker, args=(model_info,))
+        thread = threading.Thread(target=start_new_model, args=(model_info,))
         thread.start()
