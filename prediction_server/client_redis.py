@@ -17,6 +17,12 @@ class DatabaseRedis:
     def del_all_samples(self):
         self.redis.delete('samples_mode_' + str(self.model_id))
 
+    def get_length(self):
+        result = self.redis.llen('samples_mode_' + str(self.model_id))
+        if result is None:
+            return 0
+        return result
+
 
 if __name__ == '__main__':
     db = DatabaseRedis(model_id=1)

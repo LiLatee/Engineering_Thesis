@@ -166,6 +166,8 @@ services:
     ports:
       - 5000:5000
       - 5003:5003
+    stdin_open: true
+    tty: true
 
   build_and_update_model_server:
     container_name: build_and_update_model_server
@@ -180,6 +182,8 @@ services:
     ports:
       - 5002:5002
       - 5001:5001
+    stdin_open: true
+    tty: true
 
   data_provider:
     container_name: data_provider

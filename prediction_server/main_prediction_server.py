@@ -6,6 +6,7 @@ from model_SGDClassifier import ModelSGDClassifier
 import json
 import time
 import pickle
+from client_redis import DatabaseRedis
 
 NUMBER_OF_SAMPLES_BEFORE_UPDATE = 300
 
@@ -20,20 +21,24 @@ list_counter_to_update_model = [0] * 9 # liczba równoległych modeli -1
 
 def start_new_model(ModelInfo_object):
     model = ModelSGDClassifier(ModelInfo_object)
+    redis = DatabaseRedis(ModelInfo_object)
+    print("New model started")
 
     def callback(ch, method, properties, body):
         global list_counter_to_update_model
 
         if list_counter_to_update_model[ModelInfo_object.id] >= NUMBER_OF_SAMPLES_BEFORE_UPDATE:
-            print("updating model started")
-            response = requests.request(method="GET",
-                                        url='http://sqlite_api:8764/models/get_id_of_last_specified_model/?model_name=SGDClassifier')
-            last_model_id = int(response.content)
+            print("Updating model started")
+            # response = requests.request(method="GET",
+            #                             url='http://sqlite_api:8764/models/get_id_of_last_specified_model/?model_name=SGDClassifier')
+            response = redis.get_length()
+            last_model_id = int(response)
             if last_model_id == ModelInfo_object.id:
                 update_socket.send_string("update_model")
             list_counter_to_update_model[ModelInfo_object.id] = 0
 
         model.predict(sample_json=body)
+        print("Prediction was made")
         list_counter_to_update_model[ModelInfo_object.id] = list_counter_to_update_model[ModelInfo_object.id] + 1
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
