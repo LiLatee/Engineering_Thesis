@@ -12,7 +12,7 @@ from metrics import is_prediction_correct, get_roc_auc_score
 class EvaluationServer:
 
     def __init__(self) -> None:
-        self.redis = DatabaseRedis()
+        self.redis = DatabaseRedis(model_id) # TODO tu musi być id modelu
         self.db = DatabaseSQLite()
         # self.db = CassandraClient()
 
@@ -36,6 +36,7 @@ class EvaluationServer:
         # file = open("test.txt", "a+")
         # start = time.time()
         processed_samples = self.redis.get_all_samples_as_list_of_bytes()
+
         for sample in processed_samples:
             sample_json = json.loads(sample.decode('utf8'))
             self.num_processed_samples += 1

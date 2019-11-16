@@ -149,8 +149,9 @@ services:
       - 6379:6379
     volumes:
       - ../data/redis:/data
-    entrypoint: redis-server --appendonly yes
+#    entrypoint: redis-server --appendonly yes
     restart: always
+
 
   prediction_server:
     container_name: prediction_server
