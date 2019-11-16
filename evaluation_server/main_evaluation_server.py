@@ -6,7 +6,7 @@ from client_redis import DatabaseRedis
 from client_SQLite import DatabaseSQLite
 from typing import Union, Any
 from metrics import is_prediction_correct, get_roc_auc_score
-
+import threading
 
 class EvaluationServer:
 
@@ -26,26 +26,36 @@ class EvaluationServer:
 
     def process_latest_samples_and_create_message(self) -> dict:
         message = {}
-        for model in self.all_redis_connections:
-            if model.key_exists():
-                processed_samples = model.get_all_samples_as_list_of_bytes()
-                for sample in processed_samples:
-                    sample_json = json.loads(sample.decode('utf8'))
-                    model.num_processed_samples += 1
-                    self.check_correct_prediction(model, sample_json)
-                    self.db.insert_sample_as_dict(sample_json)
-                roc_auc_score = 0
-                if model.num_processed_samples > 50:
-                    roc_auc_score = self.calculate_roc_auc_score(None, None)
-                message[model.model_id] = {
-                    "processed_samples": model.num_processed_samples,
-                    "correct_predictions": model.correct_predictions,
-                    "roc_auc_score": roc_auc_score
-                }
-            else:
-                message[model.model_id] = 0
-                time.sleep(0.2)
+        number_od_models = sum([model.key_exists() for model in self.all_redis_connections])
+        threads = []
+        for index in range(number_od_models):
+            thread = threading.Thread(target=self.get_message_for_one_model,
+                                      args=(self.all_redis_connections[index], message))
+            threads.append(thread)
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+        time.sleep(1)
         return message
+
+    def get_message_for_one_model(self, model, message):
+        print(f"{threading.current_thread()} started")
+        processed_samples = model.get_all_samples_as_list_of_bytes()
+        for sample in processed_samples:
+            sample_json = json.loads(sample.decode('utf8'))
+            model.num_processed_samples += 1
+            self.check_correct_prediction(model, sample_json)
+            self.db.insert_sample_as_dict(sample_json)
+        roc_auc_score = 0
+        if model.num_processed_samples > 50:
+            roc_auc_score = self.calculate_roc_auc_score(None, None)
+        message[model.model_id] = {
+                "processed_samples": model.num_processed_samples,
+                "correct_predictions": model.correct_predictions,
+                "roc_auc_score": roc_auc_score
+
+        }
 
     def check_correct_prediction(self, model, sample: Union[str, Any]) -> None:
         if is_prediction_correct(sample):
