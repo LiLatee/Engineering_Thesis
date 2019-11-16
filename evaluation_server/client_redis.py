@@ -4,7 +4,9 @@ class DatabaseRedis:
     def __init__(self, model_id):
         self.model_id = model_id
         self.redis = redis.StrictRedis(host='redis_service', port=6379, db=0)
-        # self.redis = redis.StrictRedis(host='127.0.0.1', port=6379, db=0)
+        self.del_all_samples()
+        self.num_processed_samples = 0
+        self.correct_predictions = 0
 
     def rpush_sample(self, json_sample):
         self.redis.rpush('samples_model_' + str(self.model_id), json_sample)
@@ -17,8 +19,8 @@ class DatabaseRedis:
     def del_all_samples(self):
         self.redis.delete('samples_model_' + str(self.model_id))
 
-    def key_exists(self, model_id):
-        return self.redis.exists('samples_mode_' + str(model_id))
+    def key_exists(self):
+        return self.redis.exists('samples_model_' + str(self.model_id))
 
 
 if __name__ == '__main__':
