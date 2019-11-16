@@ -190,6 +190,8 @@ services:
       - redis_service
     ports:
       - 8765:8765
+    stdin_open: true
+    tty: true
 
   evaluation_server:
     container_name: evaluation_server
