@@ -126,7 +126,7 @@ volumes:
   models:
 
 services:
-  cassandra:
+  cassandra_api:
     container_name: cassandra_api
     image: cassandra:3.11.4
 #    volumes:
@@ -221,6 +221,9 @@ services:
       - "models:/data_models"
     ports:
       - 8766:8766
+    depends_on:
+      - cassandra_api
+    command: ["./wait-for-it.sh", "cassandra_api:9042", "--", "python", "main_evaluation_server.py"]
     stdin_open: true
     tty: true
 

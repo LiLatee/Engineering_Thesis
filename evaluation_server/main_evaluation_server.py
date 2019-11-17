@@ -2,6 +2,7 @@ import asyncio
 import websockets
 import json
 import time
+from client_cass import CassandraClient
 from client_redis import DatabaseRedis
 from client_SQLite import DatabaseSQLite
 from typing import Union, Any
@@ -13,6 +14,7 @@ class EvaluationServer:
 
     def __init__(self) -> None:
         self.all_redis_connections = [DatabaseRedis(i) for i in range(1, 8)]
+        self.cass = CassandraClient()
         # self.db = DatabaseSQLite()
 
     async def wait_for_start(self, websocket, path) -> None:
@@ -47,7 +49,8 @@ class EvaluationServer:
             sample_json = json.loads(sample.decode('utf8'))
             model.num_processed_samples += 1
             self.check_correct_prediction(model, sample_json)
-            requests.request(method='POST', url='http://cassandra_api:9042/samples', data=json.dumps(sample_json))
+            self.cass.insert_sample(sample_json)
+            # requests.request(method='POST', url='http://cassandra_api:9042/samples', data=json.dumps(sample_json))
             # self.db.insert_sample_as_dict(sample_json)
         roc_auc_score = 0
         if model.num_processed_samples > 50:
@@ -64,7 +67,9 @@ class EvaluationServer:
             model.correct_predictions += 1
 
     def calculate_roc_auc_score(self, id_first_sample: int, id_last_sample: int):
-        samples = self.db.get_all_samples_as_list_of_dicts()
+        # samples = self.db.get_all_samples_as_list_of_dicts()
+        samples = self.cass.get_all_samples_as_list_of_dicts()
+
         return get_roc_auc_score(samples)
 
 
@@ -73,3 +78,4 @@ if __name__ == "__main__":
     sending_evaluation_metrics = websockets.serve(evaluation_server.wait_for_start, "0.0.0.0", 8766)
     asyncio.get_event_loop().run_until_complete(sending_evaluation_metrics)
     asyncio.get_event_loop().run_forever()
+
