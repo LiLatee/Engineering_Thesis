@@ -5,12 +5,12 @@
 #  models:
 #
 #services:
-#  cassandra:
-#    container_name: cassandra
-#    image: cassandra:3.11.4
+#  cassandra_api:
+#    container_name: cassandra_api
+#    image: cassandra_api:3.11.4
 #    #    volumes:
-#    #      - "./cassandra-init.sh:/cassandra-init.sh"
-#    #    command: "sh /cassandra-init.sh"
+#    #      - "./cassandra_api-init.sh:/cassandra_api-init.sh"
+#    #    command: "sh /cassandra_api-init.sh"
 #    ports:
 #      - 9042:9042
 #    environment:
@@ -38,9 +38,9 @@
 #      - "samples:/data"
 #      - "models:/data"
 #    depends_on:
-#      - cassandra
+#      - cassandra_api
 ##      - cassandra_api
-#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "api2.py"]
+#    command: ["./wait-for-it.sh", "cassandra_api:9042", "--", "python", "api2.py"]
 #    ports:
 #      - 5000:5000
 #
@@ -52,9 +52,9 @@
 #      - "samples:/data"
 #      - "models:/data"
 #    depends_on:
-#      - cassandra
+#      - cassandra_api
 #    #      - cassandra_api
-#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_fit_model.py"]
+#    command: ["./wait-for-it.sh", "cassandra_api:9042", "--", "python", "main_fit_model.py"]
 #    ports:
 #      - 5001:5001
 #
@@ -66,9 +66,9 @@
 #      - "samples:/data"
 #      - "models:/data"
 #    depends_on:
-#      - cassandra
+#      - cassandra_api
 #    #      - cassandra_api
-#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_build_and_update_model.py"]
+#    command: ["./wait-for-it.sh", "cassandra_api:9042", "--", "python", "main_build_and_update_model.py"]
 #    ports:
 #      - 5002:5002
 #
@@ -80,8 +80,8 @@
 #      - "samples:/data"
 #      - "models:/data"
 #    depends_on:
-#      - cassandra
-#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "sqlite_api.py"]
+#      - cassandra_api
+#    command: ["./wait-for-it.sh", "cassandra_api:9042", "--", "python", "sqlite_api.py"]
 #    ports:
 #      - 8764:8764
 #
@@ -109,8 +109,8 @@
 #      - "samples:/data"
 #      - "models:/data"
 #    depends_on:
-#      - cassandra
-#    command: ["./wait-for-it.sh", "cassandra:9042", "--", "python", "main_evaluation_server.py"]
+#      - cassandra_api
+#    command: ["./wait-for-it.sh", "cassandra_api:9042", "--", "python", "main_evaluation_server.py"]
 #    ports:
 #      - 8766:8766
 #    stdin_open: true
@@ -126,6 +126,20 @@ volumes:
   models:
 
 services:
+  cassandra:
+    container_name: cassandra_api
+    image: cassandra:3.11.4
+#    volumes:
+#      - "./cassandra_api-init.sh:/cassandra_api-init.sh"
+#    command: "sh /cassandra_api-init.sh"
+    ports:
+      - 9042:9042
+    environment:
+      - CASSANDRA_RPC_ADDRESS=0.0.0.0
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:latest

@@ -7,12 +7,13 @@ from client_SQLite import DatabaseSQLite
 from typing import Union, Any
 from metrics import is_prediction_correct, get_roc_auc_score
 import threading
+import requests
 
 class EvaluationServer:
 
     def __init__(self) -> None:
         self.all_redis_connections = [DatabaseRedis(i) for i in range(1, 8)]
-        self.db = DatabaseSQLite()
+        # self.db = DatabaseSQLite()
 
     async def wait_for_start(self, websocket, path) -> None:
         async for message in websocket:
@@ -46,7 +47,8 @@ class EvaluationServer:
             sample_json = json.loads(sample.decode('utf8'))
             model.num_processed_samples += 1
             self.check_correct_prediction(model, sample_json)
-            self.db.insert_sample_as_dict(sample_json)
+            requests.request(method='POST', url='http://cassandra_api:9042/samples', data=json.dumps(sample_json))
+            # self.db.insert_sample_as_dict(sample_json)
         roc_auc_score = 0
         if model.num_processed_samples > 50:
             roc_auc_score = self.calculate_roc_auc_score(None, None)

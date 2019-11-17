@@ -67,7 +67,8 @@ class ModelSGDClassifier:
         self.save_model() # todo tylko jak sqlite
 
     def update_model(self) -> None:
-        response = requests.request(method="GET", url='http://sqlite_api:8764/samples-for-update/?last_sample_id=' + str(self.last_sample_id))
+        # response = requests.request(method="GET", url='http://sqlite_api:8764/samples-for-update/?last_sample_id=' + str(self.last_sample_id))
+        response = requests.request(method="GET", url='http://cassandra_api:9042/samples-for-update/?last_sample_id=' + str(self.last_sample_id))
         samples_list_of_dicts = json.loads(response.content) #todo
 
         x, y = dp.split_data_to_x_and_y(samples_list_of_dicts)
