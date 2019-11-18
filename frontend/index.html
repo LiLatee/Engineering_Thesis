@@ -14,10 +14,7 @@
 
 </head>
 <body>
-    <div class="center">
-        <h2></h2>
-    </div>
-    <div class="container">
+    <div class="container" style="padding-top: 32px">
         <a class="waves-effect waves-light btn start-button">start processing samples</a>
         <h4>Processed samples:</h4>
         <h4 id="samples">0</h4>
@@ -63,19 +60,26 @@
         ws_eval.onmessage = async function (event) {
             var message = JSON.parse(event.data);
             console.log(message);
-            var correct_prediction_ratio = message["correct_predictions"] / message["processed_samples"];
-            Plotly.extendTraces('chart',{ y:[[correct_prediction_ratio]]}, [0]);
-            cnt++;
 
-            var samples = document.getElementById("samples");
-            samples.innerHTML = message["processed_samples"];
-            var roc_auc_score = document.getElementById("roc-auc-score");
-            roc_auc_score.innerHTML = message["roc_auc_score"].toPrecision([3]);
+            for(var key in message) {
+                if(message.hasOwnProperty(key)) {
+                    model = message[key];
+                    console.log(model);
+                    var correct_prediction_ratio = model["correct_predictions"] / model["processed_samples"];
+                    Plotly.extendTraces('chart',{ y:[[correct_prediction_ratio]]}, [0]);
+                    cnt++;
+
+                    var samples = document.getElementById("samples");
+                    samples.innerHTML = model["processed_samples"];
+                    var roc_auc_score = document.getElementById("roc-auc-score");
+                    roc_auc_score.innerHTML = model["roc_auc_score"].toPrecision([3]);
+                }
+            }
 
             if(cnt > 500) {
                 Plotly.relayout('chart',{
                     xaxis: {
-                       range: [cnt-500,cnt]
+                        range: [cnt-500,cnt]
                     }
                 });
             }
