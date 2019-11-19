@@ -54,7 +54,7 @@ def thread_function(generator, index):
         try:
             data = next(generator)
             channel.basic_publish(exchange='prediction_queue_fanout', routing_key='', body=data.to_json())
-            print(f"{threading.current_thread()} sent data to /predict; no={number_of_sent_samples}")
+            # print(f"{threading.current_thread()} sent data to /predict; no={number_of_sent_samples}")
             number_of_sent_samples += 1
             time.sleep(rand.randint(0, 500)/10000)
         except StopIteration as e:

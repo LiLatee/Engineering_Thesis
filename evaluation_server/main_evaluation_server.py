@@ -28,7 +28,8 @@ class EvaluationServer:
             await websocket.send(json.dumps(message))
 
     def process_latest_samples_and_create_message(self) -> dict:
-        message = {}
+        message = []
+        # message = {}
         number_od_models = sum([model.key_exists() for model in self.all_redis_connections])
         threads = []
         for index in range(number_od_models):
@@ -55,12 +56,13 @@ class EvaluationServer:
         roc_auc_score = 0
         if model.num_processed_samples > 50:
             roc_auc_score = self.calculate_roc_auc_score(None, None)
-        message[model.model_id] = {
-                "processed_samples": model.num_processed_samples,
-                "correct_predictions": model.correct_predictions,
-                "roc_auc_score": roc_auc_score
-
-        }
+        # message[model.model_id] = {
+        message.append({
+            "id": model.model_id,
+            "processed_samples": model.num_processed_samples,
+            "correct_predictions": model.correct_predictions,
+            "roc_auc_score": roc_auc_score
+        })
 
     def check_correct_prediction(self, model, sample: Union[str, Any]) -> None:
         if is_prediction_correct(sample):
