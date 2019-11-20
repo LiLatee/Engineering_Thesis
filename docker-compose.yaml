@@ -129,6 +129,8 @@ services:
   cassandra_api:
     container_name: cassandra_api
     image: cassandra:3.11.4
+    volumes:
+      - ./cassandra_api:/usr/src/app
 #    volumes:
 #      - "./cassandra_api-init.sh:/cassandra_api-init.sh"
 #    command: "sh /cassandra_api-init.sh"
@@ -139,10 +141,13 @@ services:
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+#    command: ["python", "restart_cassandra.py"]
+
 
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:latest
+    command: ["rabbitmq-plugins enable rabbitmq_management"] #todo sprawdzić
     ports:
       - 5100:5100
 

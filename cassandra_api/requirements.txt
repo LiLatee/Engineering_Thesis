@@ -1,0 +1,3 @@
+Flask==1.1.1
+cassandra-driver==3.18
+cqlengine==0.21.0

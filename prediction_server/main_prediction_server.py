@@ -35,7 +35,7 @@ def start_new_model(ModelInfo_object):
             list_counter_to_update_model[ModelInfo_object.id] = 0
 
         model.predict(sample_json=body)
-        print("Prediction was made")
+        # print("Prediction was made")
         list_counter_to_update_model[ModelInfo_object.id] = list_counter_to_update_model[ModelInfo_object.id] + 1
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
