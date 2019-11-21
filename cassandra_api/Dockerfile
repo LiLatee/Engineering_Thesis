@@ -1,16 +1,10 @@
-FROM python:3-onbuild
-
-#FROM python:3.7-alpine
+FROM cassandra:latest
 COPY . /usr/src/app
-#COPY requirements.txt requirements.txt
-#RUN pip install -r requirements.txt
-#RUN apt-get install python3.7
-#ENV PATH=$PATH:"../Engineering_Thesis"
-#ENV PYTHONPATH "../Engineering_Thesis"
-CMD ["python", "cassandra_api.py"]
-#ADD restart_cassandra.py /
-#CMD ["python", "./restart_cassandra.py"]
 
-#COPY /home/marcin/PycharmProjects/Engineering_Thesis/cassandra_api/restart_cassandra.py /
-#ENTRYPOINT ["python restart_cassandra.py"]
+RUN apt-get -y update \
+    && apt-get -y upgrade \
+    && apt-get install -y python3-pip python3-dev \
+    && pip3 install -r /usr/src/app/requirements.txt
 
+#FROM engineering_thesis_cassandra_api
+#CMD ["python3", "/usr/src/app/clear_cassandra.py"]

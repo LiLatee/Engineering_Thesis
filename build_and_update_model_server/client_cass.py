@@ -61,8 +61,8 @@ class CassandraClient:
 
 
     def setup_cassandra(self) -> None:
-        setup(hosts=['127.0.0.1'], default_keyspace=self.KEYSPACE)
-        # setup(hosts=['cassandra_api'], default_keyspace=self.KEYSPACE)
+        # setup(hosts=['127.0.0.1'], default_keyspace=self.KEYSPACE)
+        setup(hosts=['cassandra_api'], default_keyspace=self.KEYSPACE)
 
     def restart_cassandra(self) -> None:
         self.setup_cassandra()
@@ -70,8 +70,8 @@ class CassandraClient:
         self.create_keyspace(self.session)
 
     def get_session(self) -> Session:
-        cluster = Cluster(['127.0.0.1'], port=9042)
-        # cluster = Cluster(['cassandra_api'], port=9042)
+        # cluster = Cluster(['127.0.0.1'], port=9042)
+        cluster = Cluster(['cassandra_api'], port=9042)
 
         session = cluster.connect()
         session.row_factory = dict_factory

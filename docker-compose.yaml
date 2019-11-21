@@ -128,9 +128,10 @@ volumes:
 services:
   cassandra_api:
     container_name: cassandra_api
-    image: cassandra:3.11.4
-    volumes:
-      - ./cassandra_api:/usr/src/app
+#    image: cassandra:latest
+    build: ./cassandra_api
+#    volumes:
+#      - ./cassandra_api:/usr/src/app
 #    volumes:
 #      - "./cassandra_api-init.sh:/cassandra_api-init.sh"
 #    command: "sh /cassandra_api-init.sh"
@@ -141,13 +142,13 @@ services:
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
-#    command: ["python", "restart_cassandra.py"]
+#    command: ["python3", "/usr/src/app/clear_cassandra.py"]
 
 
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:latest
-    command: ["rabbitmq-plugins enable rabbitmq_management"] #todo sprawdzić
+#    command: rabbitmq-plugins enable rabbitmq_management #todo sprawdzić - coś nie działa
     ports:
       - 5100:5100
 
@@ -228,7 +229,11 @@ services:
       - 8766:8766
     depends_on:
       - cassandra_api
-    command: ["./wait-for-it.sh", "cassandra_api:9042", "--", "python", "main_evaluation_server.py"]
+#    command: ["./wait-for-it.sh", "cassandra_api:9042", "--", "python", "clear_cassandra.py", "python", "main_evaluation_server.py"]
+    command:  bash -c "
+      ./wait-for-it.sh cassandra_api:9042
+      && python clear_cassandra.py
+      && python main_evaluation_server.py"
     stdin_open: true
     tty: true
 

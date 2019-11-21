@@ -44,7 +44,7 @@ class Sample(Model):
     predicted = columns.Text()
     probabilities = columns.List(columns.Float)
 
-
+import time
 class CassandraClient:
 
     def __init__(self):
@@ -54,20 +54,22 @@ class CassandraClient:
         self.MODEL_HISTORY_TABLE = 'model_history'
         self.LAST_SAMPLE_ID = 1
 
-        self.setup_cassandra()
-        self.session = self.get_session()
-        # self.restart_cassandra()
+        is_exception = True
+        while is_exception:
+            try:
+                self.setup_cassandra()
+                self.session = self.get_session()
+            except:
+                is_exception = True
+                continue
+            is_exception = False
+
         self.create_tables()
 
 
     def setup_cassandra(self):
         # setup(hosts=['127.0.0.1'], default_keyspace=self.KEYSPACE)
         setup(hosts=['cassandra_api'], default_keyspace=self.KEYSPACE)
-
-    def restart_cassandra(self):
-        self.setup_cassandra()
-        self.session.execute('DROP KEYSPACE IF EXISTS ' + self.KEYSPACE)
-        self.create_keyspace(self.session)
 
     def get_session(self):
         # cluster = Cluster(['127.0.0.1'], port=9042)
@@ -117,7 +119,10 @@ class CassandraClient:
         WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '1' }
         """)
 
+    def delete_all_samples(self):
+        query = 'TRUNCATE sample'
+        self.session.execute(query)
 
 if __name__ == '__main__':
     db = CassandraClient()
-    db.restart_cassandra()
+    db.delete_all_samples()
