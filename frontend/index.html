@@ -14,25 +14,45 @@
 
 </head>
 <body>
-    <div class="center">
-        <h2></h2>
-    </div>
-    <div class="container">
+    <div class="container" style="padding-top: 32px">
         <a class="waves-effect waves-light btn start-button">start processing samples</a>
         <h4>Processed samples:</h4>
         <h4 id="samples">0</h4>
-<!--        <h4>Current model name:</h4>-->
-<!--        <h4 id="model-name"></h4>-->
-<!--        <h4>Current model version:</h4>-->
-<!--        <h4 id="model-version"></h4>-->
         <h4>Roc Auc score:</h4>
         <h4 id="roc-auc-score">0.000</h4>
     </div>
     <div class="container center">
         <h5>Correct predictions [%]:</h5>
-        <div id="chart"></div>
+        <div id="models"></div>
     </div>
     <script type="text/javascript">
+
+        class Model {
+          constructor(id, x, y) {
+            this.id = id;
+            this.x = [x];
+            this.y = [y];
+            this.chart_name = "chart" + id;
+            document.getElementById('models').innerHTML += "<div id=\""+ this.chart_name +"\"></div>";
+            Plotly.plot(this.chart_name,[{
+                y: [y],
+                x: x,
+                type: 'line'
+            }]);
+          }
+
+          addPoint(x, y) {
+              this.x.push(x);
+              this.y.push(y);
+              console.log(y);
+              Plotly.extendTraces(
+                  this.chart_name,
+                  {
+                      y: [[y]]
+                  },
+                  [0]);
+          }
+        }
 
         var ws_client = new WebSocket("ws://0.0.0.0:8765");
         var ws_eval = new WebSocket("ws://0.0.0.0:8766");
@@ -43,39 +63,55 @@
             console.log('start');
             ws_client.send('start');
             ws_eval.send('start');
+        };
 
-<!--            var samples = document.getElementById("samples");-->
-<!--            var model_name = document.getElementById("model-name");-->
-<!--            var model_version = document.getElementById("model-version");-->
-            ws_client.onmessage = async function (event) {
-                var message = JSON.parse(event.data);
-<!--                samples_counter = message["samples"];-->
-<!--                model_name.innerHTML = message["model_name"];-->
-<!--                model_version.innerHTML = message["model_version"];-->
-            };
-        }
+        Object.filter = (obj, predicate) =>
+            Object.keys(obj)
+                  .filter( key => predicate(obj[key]) )
+                  .reduce( (res, key) => (res[key] = obj[key], res), {} );
 
-        Plotly.plot('chart',[{
-            y:[0],
-            type:'line'
-        }]);
         var cnt = 0;
+        models = [];
+        model_ids = [];
+        // first_model = new Model(10, 2, 2);
+        // models.push(first_model);
+        // model_ids.push(first_model.id);
+        first_model_ctn = 3;
         ws_eval.onmessage = async function (event) {
+            // first_model.addPoint(first_model_ctn, first_model_ctn);
+            // first_model_ctn = first_model_ctn+1;
             var message = JSON.parse(event.data);
             console.log(message);
-            var correct_prediction_ratio = message["correct_predictions"] / message["processed_samples"];
-            Plotly.extendTraces('chart',{ y:[[correct_prediction_ratio]]}, [0]);
-            cnt++;
 
-            var samples = document.getElementById("samples");
-            samples.innerHTML = message["processed_samples"];
-            var roc_auc_score = document.getElementById("roc-auc-score");
-            roc_auc_score.innerHTML = message["roc_auc_score"].toPrecision([3]);
+            for(var key in message) {
+                if(message.hasOwnProperty(key)) {
+                    model = message[key];
+                    console.log(model);
+                    let correct_prediction_ratio = model["correct_predictions"] / model["processed_samples"];
+                    if(model_ids.includes(model.id)) {
+                        let current_model = Object.filter(models, obj => obj.id === model.id);
+                        console.log(current_model);
+                        current_model[0].addPoint(model["processed_samples"], correct_prediction_ratio.toPrecision([3]));
+                    } else {
+                        let model_obj = new Model(model.id, model["processed_samples"], correct_prediction_ratio);
+                        models.push(model_obj);
+                        model_ids.push(model.id);
+                        console.log(models);
+                        console.log(model_ids);
+                    }
+                    cnt++;
+
+                    var samples = document.getElementById("samples");
+                    samples.innerHTML = model["processed_samples"];
+                    var roc_auc_score = document.getElementById("roc-auc-score");
+                    roc_auc_score.innerHTML = model["roc_auc_score"].toPrecision([3]);
+                }
+            }
 
             if(cnt > 500) {
                 Plotly.relayout('chart',{
                     xaxis: {
-                       range: [cnt-500,cnt]
+                        range: [cnt-500,cnt]
                     }
                 });
             }

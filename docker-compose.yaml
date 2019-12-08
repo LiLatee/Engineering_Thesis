@@ -237,3 +237,14 @@ services:
     stdin_open: true
     tty: true
 
+#  frontend_react:
+#    container_name: frontend_react
+#    build: ./frontend_react
+#    volumes:
+#      - ./frontend_react:/app
+#      - /app/node_modules
+#    ports:
+#      - '3000:3000'
+#    environment:
+#      - NODE_ENV=development
+
