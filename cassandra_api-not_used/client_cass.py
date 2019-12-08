@@ -51,7 +51,6 @@ class CassandraClient:
         super().__init__()
         self.KEYSPACE = 'keyspace_name'
         self.SAMPLE_TABLE = 'sample'
-        self.MODEL_HISTORY_TABLE = 'model_history'
         self.LAST_SAMPLE_ID = 1
 
         self.setup_cassandra()

@@ -26,7 +26,7 @@ class ModelSGDClassifier:
         self.model: SGDClassifier = None
         self.sc: StandardScaler = None
         self.pca: PCA = None
-        self.last_sample_id: int = -1
+        self.last_sample_id: int = None
         self.load_last_model()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:

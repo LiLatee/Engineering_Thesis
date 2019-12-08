@@ -1,4 +1,4 @@
-FROM cassandra:latest
+#FROM cassandra:latest
 #COPY . /usr/src/app
 #
 #RUN apt-get -y update \
@@ -7,4 +7,4 @@ FROM cassandra:latest
 #    && pip3 install -r /usr/src/app/requirements.txt
 
 #FROM engineering_thesis_cassandra_api
-#CMD ["python3", "/usr/src/app/clear_cassandra.py"]
+#CMD ["python3", "/usr/src/app/initialize_cassandra.py"]
