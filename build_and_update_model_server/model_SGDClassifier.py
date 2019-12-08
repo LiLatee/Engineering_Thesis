@@ -26,7 +26,7 @@ class ModelSGDClassifier:
         self.model: SGDClassifier = None
         self.sc: StandardScaler = None
         self.pca: PCA = None
-        self.last_sample_id: int = None
+        self.last_sample_id: str = None
         self.load_last_model()
 
     def create_model_and_save(self, training_data_json: JSONType) -> None:
@@ -82,9 +82,8 @@ class ModelSGDClassifier:
         y = np.array([int(i) for i in y])
 
         self.model.partial_fit(x, y, classes=np.array([0, 1]))
-        self.save_model() # todo zostawić tylko przy używaniu sqlite
-
         self.last_sample_id = samples_list_of_dicts[-1]['id'] #todo sprawdzić czy działa
+        self.save_model() # todo zostawić tylko przy używaniu sqlite
 
         print("LOG: updating model DONE")
 
@@ -101,6 +100,7 @@ class ModelSGDClassifier:
         model_info.model = self.model
         model_info.sc = self.sc
         model_info.pca = self.pca
+
         requests.request(method='POST', url='http://sqlite_api:8764/models', data=pickle.dumps(model_info))
 
         print("LOG: saving model DONE")

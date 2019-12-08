@@ -84,16 +84,17 @@ class DatabaseSQLite:
                                             predicted TEXT,
                                             probabilities TEXT
                                             ); """
+
         sql_create_models_table = """ CREATE TABLE IF NOT EXISTS models (
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        version INTEGER,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        last_sample_id INTEGER,
-        model BLOB,
-        standard_scaler BLOB,
-        pca BLOB
-        );
+                                        id INTEGER PRIMARY KEY,
+                                        name TEXT,
+                                        version INTEGER,
+                                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                        last_sample_id TEXT,
+                                        model BLOB,
+                                        standard_scaler BLOB,
+                                        pca BLOB
+                                        );
         """
 
         conn = self.create_connection_samples()
@@ -158,12 +159,13 @@ class DatabaseSQLite:
         binary_standard_scaler = pickle.dumps(model_info.sc)
         binary_pca = pickle.dumps(model_info.pca)
 
+
         conn = self.create_connection_models()
         cur = conn.cursor()
         cur.execute(sql_query,
                     (model_info.name,
                      model_info.version,
-                     model_info.last_sample_id,
+                     str(model_info.last_sample_id),
                      sqlite3.Binary(binary_model),
                      sqlite3.Binary(binary_standard_scaler),
                      sqlite3.Binary(binary_pca))

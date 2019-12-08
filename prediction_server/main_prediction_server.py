@@ -58,9 +58,17 @@ if __name__  == "__main__":
     context = zmq.Context()
     info_receiver = context.socket(zmq.PULL)
     info_receiver.bind("tcp://0.0.0.0:5003")  # queue to inform about new model
-    while True:
+
+    number_of_models = 2
+    current_number_of_models = 0
+
+    while current_number_of_models != number_of_models:
         info_receiver.recv_string()  # waits for signal to start new model
         response = requests.request(method='GET', url='http://sqlite_api:8764/models/get_last')
         model_info = pickle.loads(response.content)
         thread = threading.Thread(target=start_new_model, args=(model_info,))
         thread.start()
+
+
+        current_number_of_models = current_number_of_models + 1
+

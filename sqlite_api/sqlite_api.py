@@ -36,6 +36,7 @@ def insert_sample():
 @app.route('/models', methods=['POST'])
 def insert_ModelInfo():
     model_info = pickle.loads(request.data)
+
     sqlite.insert_ModelInfo(model_info) # todo trzeba sprawdzić
     return 'model inserted'
 

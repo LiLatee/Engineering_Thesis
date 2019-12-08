@@ -4,7 +4,6 @@ import json
 import time
 from client_cass import CassandraClient
 from client_redis import DatabaseRedis
-from client_SQLite import DatabaseSQLite
 from typing import Union, Any
 from metrics import is_prediction_correct, get_roc_auc_score
 import threading
