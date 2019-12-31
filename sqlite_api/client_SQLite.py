@@ -91,9 +91,7 @@ class DatabaseSQLite:
                                         version INTEGER,
                                         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                                         last_sample_id TEXT,
-                                        model BLOB,
-                                        standard_scaler BLOB,
-                                        pca BLOB
+                                        model BLOB
                                         );
         """
 
@@ -154,10 +152,8 @@ class DatabaseSQLite:
         return cur.lastrowid
 
     def insert_ModelInfo(self, model_info: model_info) -> None:
-        sql_query = """ INSERT INTO models (name, version, last_sample_id, model, standard_scaler, pca) VALUES (?,?,?,?,?,?)"""
+        sql_query = """ INSERT INTO models (name, version, last_sample_id, model) VALUES (?,?,?,?)"""
         binary_model = pickle.dumps(model_info.model)
-        binary_standard_scaler = pickle.dumps(model_info.sc)
-        binary_pca = pickle.dumps(model_info.pca)
 
 
         conn = self.create_connection_models()
@@ -166,10 +162,9 @@ class DatabaseSQLite:
                     (model_info.name,
                      model_info.version,
                      str(model_info.last_sample_id),
-                     sqlite3.Binary(binary_model),
-                     sqlite3.Binary(binary_standard_scaler),
-                     sqlite3.Binary(binary_pca))
+                     sqlite3.Binary(binary_model))
                     )
+
         conn.commit()
         conn.close()
 
@@ -188,8 +183,7 @@ class DatabaseSQLite:
         model_info.date_of_create = result[3]
         model_info.last_sample_id = result[4]
         model_info.model = pickle.loads(result[5])
-        model_info.sc = pickle.loads(result[6])
-        model_info.pca = pickle.loads(result[7])
+
 
         conn.commit()
         conn.close()
@@ -271,8 +265,6 @@ class DatabaseSQLite:
             model_info.date_of_create = list_of_values[3]
             model_info.last_sample_id = list_of_values[4]
             model_info.model = pickle.loads(list_of_values[5])
-            model_info.sc = pickle.loads(list_of_values[6])
-            model_info.pca = pickle.loads(list_of_values[7])
 
             list_of_ModelInfo.append(model_info)
 

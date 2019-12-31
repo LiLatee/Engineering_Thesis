@@ -7,7 +7,7 @@ import json
 import time
 import pickle
 
-NUMBER_OF_SAMPLES_BEFORE_UPDATE = 300
+NUMBER_OF_SAMPLES_BEFORE_UPDATE = 500
 
 context = zmq.Context()
 # fit_socket = context.socket(zmq.PAIR)
@@ -59,7 +59,7 @@ if __name__  == "__main__":
     info_receiver = context.socket(zmq.PULL)
     info_receiver.bind("tcp://0.0.0.0:5003")  # queue to inform about new model
 
-    number_of_models = 2
+    number_of_models = 3
     current_number_of_models = 0
 
     while current_number_of_models != number_of_models:

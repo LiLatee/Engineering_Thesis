@@ -19,7 +19,7 @@ def is_prediction_correct(sample: dict) -> bool:
 
 
 def get_roc_auc_score(samples: List) -> float:
-    y_true = [int(sample.get("sale")) for sample in samples]
+    y_true = [int(float(sample.get("sale"))) for sample in samples]
     y_scores = [sample.get("probabilities")[1] for sample in samples]
 
 

@@ -33,7 +33,7 @@ class EvaluationServer:
         threads = []
         for index in range(number_od_models):
             thread = threading.Thread(target=self.get_message_for_one_model,
-                                      args=(self.all_redis_connections[index], message))
+                                      args=(self.all_redis_connections[index], message, index))
             threads.append(thread)
             thread.start()
 
@@ -42,7 +42,7 @@ class EvaluationServer:
         time.sleep(1)
         return message
 
-    def get_message_for_one_model(self, model, message):
+    def get_message_for_one_model(self, model, message, index):
         print(f"{threading.current_thread()} started")
         processed_samples = model.get_all_samples_as_list_of_bytes()
         for sample in processed_samples:
@@ -59,7 +59,7 @@ class EvaluationServer:
         message.append({
             "id": model.model_id,
             "processed_samples": model.num_processed_samples,
-            "correct_predictions": model.correct_predictions,
+            "correct_predictions": index,
             "roc_auc_score": roc_auc_score
         })
 

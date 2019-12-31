@@ -257,6 +257,9 @@ class CassandraClient:
 
         result = []
         for sample in query_result:
+            sample.pop('id', None)
+            sample.pop('predicted', None)
+            sample.pop('probabilities', None)
             result.append(sample)
 
         return result
