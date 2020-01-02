@@ -26,7 +26,7 @@ class EvaluationServer:
             message = self.process_latest_samples_and_create_message()
             await websocket.send(json.dumps(message))
 
-    def process_latest_samples_and_create_message(self) -> dict:
+    def process_latest_samples_and_create_message(self) -> list:
         message = []
         # message = {}
         number_od_models = sum([model.key_exists() for model in self.all_redis_connections])
@@ -43,6 +43,9 @@ class EvaluationServer:
         return message
 
     def get_message_for_one_model(self, model, message, index):
+        print(model.model_id)
+        print(model.num_processed_samples)
+        print(model.correct_predictions)
         print(f"{threading.current_thread()} started")
         processed_samples = model.get_all_samples_as_list_of_bytes()
         for sample in processed_samples:
@@ -55,17 +58,19 @@ class EvaluationServer:
         roc_auc_score = 0
         if model.num_processed_samples > 50:
             roc_auc_score = self.calculate_roc_auc_score(None, None)
-        # message[model.model_id] = {
+        print("Auc roc = " + str(roc_auc_score))
+        print(f"Correct predictions={model.correct_predictions}")
         message.append({
             "id": model.model_id,
             "processed_samples": model.num_processed_samples,
-            "correct_predictions": index,
+            "correct_predictions": model.correct_predictions,
             "roc_auc_score": roc_auc_score
         })
 
     def check_correct_prediction(self, model, sample: Union[str, Any]) -> None:
         if is_prediction_correct(sample):
             model.correct_predictions += 1
+
 
     def calculate_roc_auc_score(self, id_first_sample: int, id_last_sample: int):
         # samples = self.db.get_all_samples_as_list_of_dicts()

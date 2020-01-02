@@ -1,6 +1,7 @@
 import json
 from typing import List, Union, Any
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import confusion_matrix
 
 
 def get_num_of_good_predictions(samples: List[bytes]) -> int:
@@ -15,17 +16,25 @@ def get_num_of_good_predictions(samples: List[bytes]) -> int:
 
 
 def is_prediction_correct(sample: dict) -> bool:
-    return str(sample.get("sale")) == str(sample.get("predicted"))
+    return int(sample.get("sale")) == int(sample.get("predicted"))
 
 
 def get_roc_auc_score(samples: List) -> float:
     y_true = [int(float(sample.get("sale"))) for sample in samples]
+    # print(f"probabilities: {samples[0].get('probabilities')}")
     y_scores = [sample.get("probabilities")[1] for sample in samples]
 
-
+    # print('y_true:', y_true, flush=True)
     # print('y_true:', len(y_true), flush=True)
+    # print('y_scores', y_scores, flush=True)
     # print('y_scores', len(y_scores), flush=True)
-    return roc_auc_score(y_true, y_scores)
+    # return roc_auc_score(y_scores, y_true)
+    rocauc = roc_auc_score(y_true, y_scores)
+    print(f"rocauc={rocauc}")
+    # return roc_auc_score(y_true, y_scores)
+    tn, fp, fn, tp = confusion_matrix(y_true, y_scores).ravel()
+    print(f"confusion matrix tn, fp, fn, tp = {tn, fp, fn, tp}")
+    return rocauc
 
 
 def sample_bytes_to_json(sample: bytes) -> Union[str, Any]:
