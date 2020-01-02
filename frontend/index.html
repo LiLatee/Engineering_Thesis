@@ -23,44 +23,32 @@
     </div>
     <div class="container center">
         <h5>Correct predictions [%]:</h5>
-        <div id="models"></div>
+        <div id="correct-predictions"></div>
+        <h5>Auc-Roc:</h5>
+        <div id="auc-roc"></div>
     </div>
     <script type="text/javascript">
-        document.getElementById('models').innerHTML += "<div id=\""+ "chart" +"\"></div>";
-        Plotly.plot("chart", [
-                {
-                    y: [0],
-                    x: 0
-                },
-                {
-                    y: [0],
-                    x: 0
-                },
-                {
-                    y: [0],
-                    x: 0
-                },
-                {
-                    y: [0],
-                    x: 0
-                },
-                {
-                    y: [0],
-                    x: 0
-                },
-                {
-                    y: [0],
-                    x: 0
-                },
-                {
-                    y: [0],
-                    x: 0
-                },
-                {
-                    y: [0],
-                    x: 0
-                }]);
+        Plotly.plot("correct-predictions", [
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+        ]);
 
+        Plotly.plot("auc-roc", [
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+                {y: [0], x: 0},
+        ]);
 
         var ws_client = new WebSocket("ws://0.0.0.0:8765");
         var ws_eval = new WebSocket("ws://0.0.0.0:8766");
@@ -73,21 +61,19 @@
             ws_eval.send('start');
         };
 
-
         var cnt = 0;
         first_model_ctn = 3;
         ws_eval.onmessage = async function (event) {
-
             var message = JSON.parse(event.data);
-            console.log("message");
             console.log(message);
-            let list_of_correct_prediction_ratio = [[0],[0],[0],[0],[0],[0],[0],[0]]
+            let list_of_correct_prediction_ratio = [[0], [0], [0], [0], [0], [0], [0], [0]];
+            let list_of_aucroc = [[0], [0], [0], [0], [0], [0], [0], [0]];
             for(var key in message) {
                 if(message.hasOwnProperty(key)) {
                     model = message[key];
-                    console.log("rekord");
                     console.log(model);
-                    list_of_correct_prediction_ratio[model.id-1] = [model["correct_predictions"] / model["processed_samples"]]
+                    list_of_correct_prediction_ratio[model.id - 1] = [model["correct_predictions"] / model["processed_samples"]];
+                    list_of_aucroc[model.id - 1] = [model["roc_auc_score"].toPrecision([3])];
                     cnt++;
 
                     var samples = document.getElementById("samples");
@@ -96,17 +82,26 @@
                     roc_auc_score.innerHTML = model["roc_auc_score"].toPrecision([3]);
                 }
             }
-            console.log(list_of_correct_prediction_ratio)
             Plotly.extendTraces(
-              "chart",
+              "correct-predictions",
               {
                   y: list_of_correct_prediction_ratio
               },
               [0,1,2,3,4,5,6,7]);
-
+            Plotly.extendTraces(
+              "auc-roc",
+              {
+                  y: list_of_aucroc
+              },
+              [0,1,2,3,4,5,6,7]);
 
             if(cnt > 500) {
-                Plotly.relayout("chart",{
+                Plotly.relayout("correct-predictions",{
+                    xaxis: {
+                        range: [cnt-500,cnt]
+                    }
+                });
+                Plotly.relayout("auc-roc",{
                     xaxis: {
                         range: [cnt-500,cnt]
                     }
