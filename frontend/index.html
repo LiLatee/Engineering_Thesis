@@ -29,25 +29,25 @@
     </div>
     <script type="text/javascript">
         Plotly.plot("correct-predictions", [
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
+                {y: [0], x: 0, name: "model 1"},
+                {y: [0], x: 0, name: "model 2"},
+                {y: [0], x: 0, name: "model 3"},
+                {y: [0], x: 0, name: "model 4"},
+                {y: [0], x: 0, name: "model 5"},
+                {y: [0], x: 0, name: "model 6"},
+                {y: [0], x: 0, name: "model 7"},
+                {y: [0], x: 0, name: "model 8"}
         ]);
 
         Plotly.plot("auc-roc", [
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
-                {y: [0], x: 0},
+                {y: [0], x: 0, name: "model 1"},
+                {y: [0], x: 0, name: "model 2"},
+                {y: [0], x: 0, name: "model 3"},
+                {y: [0], x: 0, name: "model 4"},
+                {y: [0], x: 0, name: "model 5"},
+                {y: [0], x: 0, name: "model 6"},
+                {y: [0], x: 0, name: "model 7"},
+                {y: [0], x: 0, name: "model 8"}
         ]);
 
         var ws_client = new WebSocket("ws://0.0.0.0:8765");
