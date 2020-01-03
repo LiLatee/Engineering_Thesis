@@ -20,21 +20,17 @@ def is_prediction_correct(sample: dict) -> bool:
 
 
 def get_roc_auc_score(samples: List) -> float:
-    y_true = [int(float(sample.get("sale"))) for sample in samples]
-    # print(f"probabilities: {samples[0].get('probabilities')}")
-    y_scores = [sample.get("probabilities")[1] for sample in samples]
+    y_true = [int(float(sample_bytes_to_json(sample).get("sale"))) for sample in samples]
+    y_scores = [float(sample_bytes_to_json(sample).get("probabilities")[6:9]) for sample in samples]
 
     # print('y_true:', y_true, flush=True)
     # print('y_true:', len(y_true), flush=True)
     # print('y_scores', y_scores, flush=True)
     # print('y_scores', len(y_scores), flush=True)
     # return roc_auc_score(y_scores, y_true)
-    rocauc = roc_auc_score(y_true, y_scores)
-    print(f"rocauc={rocauc}")
-    # return roc_auc_score(y_true, y_scores)
-    tn, fp, fn, tp = confusion_matrix(y_true, y_scores).ravel()
-    print(f"confusion matrix tn, fp, fn, tp = {tn, fp, fn, tp}")
-    return rocauc
+    # tn, fp, fn, tp = confusion_matrix(y_true, y_scores).ravel()
+    # print(f"confusion matrix tn, fp, fn, tp = {tn, fp, fn, tp}")
+    return roc_auc_score(y_true, y_scores)
 
 
 def sample_bytes_to_json(sample: bytes) -> Union[str, Any]:

@@ -13,8 +13,7 @@ class EvaluationServer:
 
     def __init__(self) -> None:
         self.all_redis_connections = [DatabaseRedis(i) for i in range(1, 8)]
-        self.cass = CassandraClient() # TODO tu tzreba zrobić identyczną sytuację jak linijkę wyżej i dalej w kodzie ofc
-        # self.db = DatabaseSQLite()
+        self.all_cass_connections = [CassandraClient(i) for i in range(1, 8)]
 
     async def wait_for_start(self, websocket, path) -> None:
         async for message in websocket:
@@ -40,7 +39,7 @@ class EvaluationServer:
 
         for thread in threads:
             thread.join()
-        time.sleep(1)
+        time.sleep(5)
         return message
 
     def get_message_for_one_model(self, model, message, index):
@@ -53,12 +52,12 @@ class EvaluationServer:
             sample_json = json.loads(sample.decode('utf8'))
             model.num_processed_samples += 1
             self.check_correct_prediction(model, sample_json)
-            self.cass.insert_sample(sample_json)
+            self.all_cass_connections[model.model_id - 1].insert_sample(sample_json)
             # requests.request(method='POST', url='http://cassandra_api:9042/samples', data=json.dumps(sample_json))
             # self.db.insert_sample_as_dict(sample_json)
         roc_auc_score = 0
         if model.num_processed_samples > 50:
-            roc_auc_score = self.calculate_roc_auc_score(None, None)
+            roc_auc_score = self.calculate_roc_auc_score(processed_samples)
         print("Auc roc = " + str(roc_auc_score))
         print(f"Correct predictions={model.correct_predictions}")
         message.append({
@@ -72,11 +71,7 @@ class EvaluationServer:
         if is_prediction_correct(sample):
             model.correct_predictions += 1
 
-
-    def calculate_roc_auc_score(self, id_first_sample: int, id_last_sample: int):
-        # samples = self.db.get_all_samples_as_list_of_dicts()
-        samples = self.cass.get_all_samples_as_list_of_dicts()
-
+    def calculate_roc_auc_score(self, samples):
         return get_roc_auc_score(samples)
 
 
