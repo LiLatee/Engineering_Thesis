@@ -18,8 +18,6 @@
         <a class="waves-effect waves-light btn start-button">start processing samples</a>
         <h4>Processed samples:</h4>
         <h4 id="samples">0</h4>
-        <h4>Roc Auc score:</h4>
-        <h4 id="roc-auc-score">0.000</h4>
     </div>
     <div class="container center">
         <h5>Correct predictions [%]:</h5>
@@ -63,25 +61,26 @@
 
         var cnt = 0;
         first_model_ctn = 3;
+        let max_currently_processed_samples = 0;
+        var samples = document.getElementById("samples");
         ws_eval.onmessage = async function (event) {
             var message = JSON.parse(event.data);
             console.log(message);
             let list_of_correct_prediction_ratio = [[0], [0], [0], [0], [0], [0], [0], [0]];
             let list_of_aucroc = [[0], [0], [0], [0], [0], [0], [0], [0]];
             for(var key in message) {
-                if(message.hasOwnProperty(key)) {
+                if (message.hasOwnProperty(key)) {
                     model = message[key];
                     console.log(model);
                     list_of_correct_prediction_ratio[model.id - 1] = [model["correct_predictions"] / model["processed_samples"]];
                     list_of_aucroc[model.id - 1] = [model["roc_auc_score"].toPrecision([3])];
+                    if (model['processed_samples'] > max_currently_processed_samples) {
+                        max_currently_processed_samples = model['processed_samples'];
+                    }
                     cnt++;
-
-                    var samples = document.getElementById("samples");
-                    samples.innerHTML = model["processed_samples"];
-                    var roc_auc_score = document.getElementById("roc-auc-score");
-                    roc_auc_score.innerHTML = model["roc_auc_score"].toPrecision([3]);
                 }
             }
+            samples.innerHTML = max_currently_processed_samples;
             Plotly.extendTraces(
               "correct-predictions",
               {
