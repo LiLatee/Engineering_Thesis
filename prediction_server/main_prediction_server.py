@@ -7,7 +7,7 @@ import json
 import time
 import pickle
 
-NUMBER_OF_SAMPLES_BEFORE_UPDATE = 500
+NUMBER_OF_SAMPLES_BEFORE_UPDATE = 10000
 
 context = zmq.Context()
 # fit_socket = context.socket(zmq.PAIR)
