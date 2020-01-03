@@ -24,7 +24,8 @@ class EvaluationServer:
     async def send_current_evaluation_metrics(self, websocket) -> None:
         while True:
             message = self.process_latest_samples_and_create_message()
-            await websocket.send(json.dumps(message))
+            if len(message) is not 0:
+                await websocket.send(json.dumps(message))
 
     def process_latest_samples_and_create_message(self) -> list:
         message = []
