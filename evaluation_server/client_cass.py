@@ -16,7 +16,7 @@ RowAsDictType = Dict[str, Union[str, float, int]]
 
 class CassandraClient:
 
-    def __init__(self, number_of_model=1) -> None:
+    def __init__(self, number_of_model) -> None:
         super().__init__()
         self.KEYSPACE = 'keyspace_name'
         self.TABLE_NAME = 'model_' + str(number_of_model)

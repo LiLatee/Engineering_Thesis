@@ -13,7 +13,7 @@ class EvaluationServer:
 
     def __init__(self) -> None:
         self.all_redis_connections = [DatabaseRedis(i) for i in range(1, 8)]
-        self.cass = CassandraClient()
+        self.cass = CassandraClient() # TODO tu tzreba zrobić identyczną sytuację jak linijkę wyżej i dalej w kodzie ofc
         # self.db = DatabaseSQLite()
 
     async def wait_for_start(self, websocket, path) -> None:
