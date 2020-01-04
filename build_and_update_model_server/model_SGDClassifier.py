@@ -42,11 +42,20 @@ class ModelSGDClassifier:
         #         "rb")
         #     self.LabelEncoders_dict = pickle.load(file)
 
-    def create_model_and_save(self, training_data_json: JSONType) -> None:
+    def create_model_and_save(self, training_data_json: JSONType, update: bool = False) -> None:
         print("create_model_and_save")
         start = time.time()
 
         df = pd.read_json(training_data_json, orient='records')
+        if not update:
+            cass = CassandraClient(table_name='all_stored_samples')
+            for _, row in df.iterrows():
+                cass.insert_sample(row.to_dict())
+        else:
+            df = df[['sale','sales_amount_in_euro','time_delay_for_conversion','click_timestamp','nb_clicks_1week','product_price',
+                    'product_age_group','device_type','audience_id','product_gender','product_brand','product_category_1',
+                    'product_category_2','product_category_3','product_category_4','product_category_5','product_category_6',
+                    'product_category_7','product_country','product_id','product_title','partner_id','user_id']]
         # df[self.names_of_columns_with_ids] = df[self.names_of_columns_with_ids].astype(str)
         # df[self.names_of_columns_with_ids] = df[self.names_of_columns_with_ids].apply(
         #     lambda x: self.LabelEncoders_dict[x.name].transform(x))
@@ -58,7 +67,7 @@ class ModelSGDClassifier:
 
         model = SGDClassifier(loss='log', random_state=1, tol=1e-3, max_iter=1000, penalty='l1', alpha=1e-05, n_jobs=-1,
                               class_weight={0: percent_of_ones, 1: 1 - percent_of_ones})
-        x_train = df.loc[:, df.columns != 'sale']
+        x_train = df.loc[:, df.columns != 'sale'] # todo wywalić timestamp df.loc[:,~df.columns.isin(['sale','click_timestamp])]
         y_train = df['sale']
 
         model.fit(x_train, y_train)
@@ -96,15 +105,15 @@ class ModelSGDClassifier:
                     return obj.hex
                 return json.JSONEncoder.default(self, obj)
 
-        cass = CassandraClient()
-        samples_list_of_dicts = cass.get_samples_for_update_model_as_list_of_dicts() # todo tu są tylko brane dodane i omijane te ze zbioru treningowego
-        self.create_model_and_save(json.dumps(samples_list_of_dicts, cls=UUIDEncoder))
+        cass = CassandraClient(table_name='all_stored_samples')
+        samples_list_of_dicts = cass.get_all_samples_as_list_of_dicts() # todo tu są tylko brane dodane i omijane te ze zbioru treningowego, w trakcie
+        self.create_model_and_save(json.dumps(samples_list_of_dicts, cls=UUIDEncoder), update=True)
         print("LOG: updating model DONE")
 
     def save_model(self) -> None:
         response = requests.request(method="GET",
                                     url='http://sqlite_api:8764/models/?model_name=SGDClassifier')  # todo usunąć hardcoded nazwę modelu
-        new_version = pickle.loads(response.content)
+        new_version = int(pickle.loads(response.content)) + 1
 
         # zapisywanie modelu do sqlite
         model_info = ModelInfo()

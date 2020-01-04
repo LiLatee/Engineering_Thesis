@@ -7,7 +7,7 @@ import json
 import time
 import pickle
 
-NUMBER_OF_SAMPLES_BEFORE_UPDATE = 10000
+NUMBER_OF_SAMPLES_BEFORE_UPDATE = 1000
 
 context = zmq.Context()
 # fit_socket = context.socket(zmq.PAIR)
@@ -69,4 +69,3 @@ if __name__  == "__main__":
         thread = threading.Thread(target=start_new_model, args=(model_info,))
         thread.start()
         current_number_of_models += 1
-
