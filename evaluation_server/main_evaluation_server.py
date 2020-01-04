@@ -12,8 +12,8 @@ import requests
 class EvaluationServer:
 
     def __init__(self) -> None:
-        self.all_redis_connections = [DatabaseRedis(i) for i in range(1, 8)]
-        self.all_cass_connections = [CassandraClient(i) for i in range(1, 8)]
+        self.all_redis_connections = [DatabaseRedis(i) for i in range(1, 9)]
+        self.all_cass_connections = [CassandraClient(i) for i in range(1, 9)]
 
     async def wait_for_start(self, websocket, path) -> None:
         async for message in websocket:
