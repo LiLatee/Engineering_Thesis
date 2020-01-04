@@ -7,7 +7,7 @@ import json
 import time
 import pickle
 
-NUMBER_OF_SAMPLES_BEFORE_UPDATE = 10000
+NUMBER_OF_SAMPLES_BEFORE_UPDATE = 1000
 
 context = zmq.Context()
 # fit_socket = context.socket(zmq.PAIR)
@@ -59,8 +59,9 @@ if __name__  == "__main__":
     info_receiver = context.socket(zmq.PULL)
     info_receiver.bind("tcp://0.0.0.0:5003")  # queue to inform about new model
 
-    number_of_models = 3
+    number_of_models = 8
     current_number_of_models = 0
+
 
     while current_number_of_models != number_of_models:
         info_receiver.recv_string()  # waits for signal to start new model
@@ -68,7 +69,7 @@ if __name__  == "__main__":
         model_info = pickle.loads(response.content)
         thread = threading.Thread(target=start_new_model, args=(model_info,))
         thread.start()
-
-
         current_number_of_models = current_number_of_models + 1
+        file = open('test.txt', 'a+')
+        file.write(str(current_number_of_models))
 

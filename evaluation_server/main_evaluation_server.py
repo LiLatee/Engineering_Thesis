@@ -13,7 +13,8 @@ class EvaluationServer:
 
     def __init__(self) -> None:
         self.all_redis_connections = [DatabaseRedis(i) for i in range(1, 8)]
-        self.all_cass_connections = [CassandraClient(i) for i in range(1, 8)]
+        self.all_cass_connections_for_each_model = [CassandraClient(table_name='model_' + str(i)) for i in range(1, 8)]
+        self.cass_connection_for_all_stored_samples = CassandraClient(table_name='all_stored_samples')
 
     async def wait_for_start(self, websocket, path) -> None:
         async for message in websocket:
@@ -47,12 +48,18 @@ class EvaluationServer:
         print(model.num_processed_samples)
         print(model.correct_predictions)
         print(f"{threading.current_thread()} started")
-        processed_samples = model.get_all_samples_as_list_of_bytes()
+        processed_samples = model.get_all_samples_as_list_of_json()
         for sample in processed_samples:
-            sample_json = json.loads(sample.decode('utf8'))
+            sample_json = json.loads(sample.decode('utf8')) # TODO to już raczej powinno być sample_dict, bo jak robimy load to json zamienia się w słownik, racja? bo ja nigdy nwm ja traktować jsona, jako stringa?
+
+            sample_dict_without_predicted_columns = sample_json.copy()
+            del sample_dict_without_predicted_columns['predicted']
+            del sample_dict_without_predicted_columns['probabilities']
+            self.cass_connection_for_all_stored_samples.insert_sample(sample_dict_without_predicted_columns)
+
             model.num_processed_samples += 1
             self.check_correct_prediction(model, sample_json)
-            self.all_cass_connections[model.model_id - 1].insert_sample(sample_json)
+            self.all_cass_connections_for_each_model[model.model_id - 1].insert_sample(sample_json)
             # requests.request(method='POST', url='http://cassandra_api:9042/samples', data=json.dumps(sample_json))
             # self.db.insert_sample_as_dict(sample_json)
         roc_auc_score = 0
