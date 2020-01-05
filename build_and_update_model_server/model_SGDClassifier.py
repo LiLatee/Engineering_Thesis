@@ -33,6 +33,7 @@ class ModelSGDClassifier:
         #                                   'product_title', 'user_id']
         self.model: SGDClassifier = None
         self.last_sample_id: str = None
+        self.df_product_clicks_views = None
         # self.LabelEncoders_dict = None
         self.load_last_model()
 
@@ -60,6 +61,32 @@ class ModelSGDClassifier:
         # df[self.names_of_columns_with_ids] = df[self.names_of_columns_with_ids].apply(
         #     lambda x: self.LabelEncoders_dict[x.name].transform(x))
 
+        df['day_of_week'] = pd.to_datetime(df['click_timestamp'], unit='s').dt.weekday
+        df['hour'] = pd.to_datetime(df['click_timestamp'], unit='s').dt.hour
+
+        df_product_clicks = df[['sale', 'product_id']]
+        df_product_clicks = df_product_clicks.groupby('product_id').sum().reset_index()
+        df = pd.merge(df,
+                      df_product_clicks,
+                      left_on='product_id',
+                      right_on='product_id',
+                      how='left')
+        df = df.rename(columns={'sale_x': 'sale', 'sale_y': 'clicks'})
+
+        df_product_views = df['product_id'].value_counts().to_frame("views").reset_index()
+        df_product_views = df_product_views.rename(columns={'index': 'product_id'})
+        df = pd.merge(df,
+                      df_product_views,
+                      left_on='product_id',
+                      right_on='product_id',
+                      how='left')
+        df = df.rename(columns={'sale_x': 'sale', 'sale_y': 'views'})
+
+        df['clicks_views_ratio'] = df['clicks'] / df['views']
+        df.loc[(df['views'] < 5), 'clicks_views_ratio'] = 0
+
+        df_product_clicks_views = df[['product_id', 'clicks', 'views']]
+        self.df_product_clicks_views = df_product_clicks_views
 
         number_of_samples = df.shape[0]
         counter = collections.Counter(df['sale'])
@@ -67,8 +94,13 @@ class ModelSGDClassifier:
 
         model = SGDClassifier(loss='log', random_state=1, tol=1e-3, max_iter=1000, penalty='l1', alpha=1e-05, n_jobs=-1,
                               class_weight={0: percent_of_ones, 1: 1 - percent_of_ones})
-        x_train = df.loc[:, df.columns != 'sale'] # todo wywalić timestamp df.loc[:,~df.columns.isin(['sale','click_timestamp])]
+        x_train = df[
+            ['clicks_views_ratio', 'device_type', 'audience_id', 'partner_id', 'product_brand', 'views', 'clicks',
+             'nb_clicks_1week', 'product_gender']]
         y_train = df['sale']
+
+        # x_train = df.loc[:, df.columns != 'sale'] # todo wywalić timestamp df.loc[:,~df.columns.isin(['sale','click_timestamp])]
+        # y_train = df['sale']
 
         model.fit(x_train, y_train)
 
@@ -122,6 +154,7 @@ class ModelSGDClassifier:
         model_info.date_of_create = time.time()
         model_info.last_sample_id = self.last_sample_id
         model_info.model = self.model
+        model_info.df_product_clicks_views = self.df_product_clicks_views
         # model_info.LabelEncoders_dict = self.LabelEncoders_dict
 
         requests.request(method='POST', url='http://sqlite_api:8764/models', data=pickle.dumps(model_info))
@@ -136,6 +169,7 @@ class ModelSGDClassifier:
         if model_info is None:
             return
         self.model = model_info.model
+        self.df_product_clicks_views = model_info.df_product_clicks_views # todo niepotrzebne?
         # self.LabelEncoders_dict = model_info.LabelEncoders_dict
 
         print("LOG: " + "Model loaded.")

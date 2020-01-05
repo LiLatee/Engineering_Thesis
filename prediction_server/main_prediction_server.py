@@ -7,16 +7,16 @@ import json
 import time
 import pickle
 
-NUMBER_OF_SAMPLES_BEFORE_UPDATE = 1000
+NUMBER_OF_SAMPLES_BEFORE_UPDATE = 50000
+NUMBER_OF_MODELS = 8
 
 context = zmq.Context()
 # fit_socket = context.socket(zmq.PAIR)
 # fit_socket.connect("tcp://fit_model_server:5001")
 update_socket = context.socket(zmq.PUSH)
 update_socket.connect("tcp://build_and_update_model_server:5002")
+list_counter_to_update_model = [0] * (NUMBER_OF_MODELS+1) # liczba równoległych modeli +1
 
-
-list_counter_to_update_model = [0] * 9 # liczba równoległych modeli -1
 
 def start_new_model(ModelInfo_object):
     model = ModelSGDClassifier(ModelInfo_object)
@@ -54,22 +54,18 @@ def start_new_model(ModelInfo_object):
     channel.start_consuming()
 
 
-if __name__  == "__main__":
+if __name__ == "__main__":
     context = zmq.Context()
     info_receiver = context.socket(zmq.PULL)
     info_receiver.bind("tcp://0.0.0.0:5003")  # queue to inform about new model
 
-    number_of_models = 8
     current_number_of_models = 0
-
-
-    while current_number_of_models != number_of_models:
+    while current_number_of_models != NUMBER_OF_MODELS:
         info_receiver.recv_string()  # waits for signal to start new model
         response = requests.request(method='GET', url='http://sqlite_api:8764/models/get_last')
         model_info = pickle.loads(response.content)
         thread = threading.Thread(target=start_new_model, args=(model_info,))
         thread.start()
         current_number_of_models = current_number_of_models + 1
-        file = open('test.txt', 'a+')
-        file.write(str(current_number_of_models))
+
 

@@ -12,8 +12,8 @@ import requests
 class EvaluationServer:
 
     def __init__(self) -> None:
-        self.all_redis_connections = [DatabaseRedis(i) for i in range(1, 8)]
-        self.all_cass_connections_for_each_model = [CassandraClient(table_name='model_' + str(i)) for i in range(1, 8)]
+        self.all_redis_connections = [DatabaseRedis(i) for i in range(1, 9)]
+        self.all_cass_connections_for_each_model = [CassandraClient(table_name='model_' + str(i)) for i in range(1, 9)]
         self.cass_connection_for_all_stored_samples = CassandraClient(table_name='all_stored_samples')
 
     async def wait_for_start(self, websocket, path) -> None:
