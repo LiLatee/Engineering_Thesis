@@ -7,7 +7,6 @@ import json
 import time
 import pickle
 
-NUMBER_OF_SAMPLES_BEFORE_UPDATE = 50000
 NUMBER_OF_MODELS = 8
 
 context = zmq.Context()
@@ -18,14 +17,14 @@ update_socket.connect("tcp://build_and_update_model_server:5002")
 list_counter_to_update_model = [0] * (NUMBER_OF_MODELS+1) # liczba równoległych modeli +1
 
 
-def start_new_model(ModelInfo_object):
+def start_new_model(ModelInfo_object, number_of_samples_before_update):
     model = ModelSGDClassifier(ModelInfo_object)
     print("New model started")
 
     def callback(ch, method, properties, body):
         global list_counter_to_update_model
 
-        if list_counter_to_update_model[ModelInfo_object.id] >= NUMBER_OF_SAMPLES_BEFORE_UPDATE:
+        if list_counter_to_update_model[ModelInfo_object.id] >= number_of_samples_before_update:
             print("Updating model started")
             response = requests.request(method="GET",
                                         url='http://sqlite_api:8764/models/get_id_of_last_specified_model/?model_name=SGDClassifier')
@@ -61,10 +60,11 @@ if __name__ == "__main__":
 
     current_number_of_models = 0
     while current_number_of_models != NUMBER_OF_MODELS:
-        info_receiver.recv_string()  # waits for signal to start new model
+        message = info_receiver.recv_string()  # waits for signal to start new model
         response = requests.request(method='GET', url='http://sqlite_api:8764/models/get_last')
+        print(message)
         model_info = pickle.loads(response.content)
-        thread = threading.Thread(target=start_new_model, args=(model_info,))
+        thread = threading.Thread(target=start_new_model, args=(model_info, 1000))
         thread.start()
         current_number_of_models = current_number_of_models + 1
 

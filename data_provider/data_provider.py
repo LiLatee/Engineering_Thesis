@@ -6,21 +6,29 @@ import zmq
 import pika
 import time
 import random
+import json
 
 
-train_model_samples_number = 1000
-number_of_threads = 2
-number_of_sent_samples = 0
+number_of_threads = 1
 
 
 async def consumer_handler(websocket, path) -> None:
     async for message in websocket:
-        if message == 'start':
-            await process_all_samples()
+        message_obj = json.loads(message)
+        if message_obj['start']:
+            send_data_about_number_of_samples_between_updates(message_obj['samples_model_updates'])
+            await process_all_samples(int(message_obj['training_dataset_size']))
 
 
-async def process_all_samples() -> None:
-    send_samples_for_model_training()
+def send_data_about_number_of_samples_between_updates(samples_model_updates):
+    context = zmq.Context()
+    fit_socket = context.socket(zmq.PAIR)
+    fit_socket.connect('tcp://build_and_update_model_server:5004')
+    fit_socket.send_string(samples_model_updates)
+
+
+async def process_all_samples(training_dataset_size) -> None:
+    send_samples_for_model_training(training_dataset_size)
     generator = data_generator.data_generator()
     threads = list()
     for index in range(number_of_threads):
@@ -33,8 +41,8 @@ async def process_all_samples() -> None:
     print("All threads have ended")
 
 
-def send_samples_for_model_training() -> None:
-    data = data_generator.get_train_data()
+def send_samples_for_model_training(training_dataset_size) -> None:
+    data = data_generator.get_train_data(training_dataset_size)
     context = zmq.Context()
     fit_socket = context.socket(zmq.PAIR)
     fit_socket.connect('tcp://build_and_update_model_server:5001')
@@ -44,7 +52,6 @@ def send_samples_for_model_training() -> None:
 
 
 def thread_function(generator, index):
-    global number_of_sent_samples
     rand = random.Random()
     print(f"{threading.current_thread()} started")
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
@@ -55,7 +62,6 @@ def thread_function(generator, index):
             data = next(generator)
             channel.basic_publish(exchange='prediction_queue_fanout', routing_key='', body=data.to_json())
             # print(f"{threading.current_thread()} sent data to /predict; no={number_of_sent_samples}")
-            number_of_sent_samples += 1
             time.sleep(rand.randint(0, 500)/10000)
         except StopIteration as e:
             print(f"{threading.current_thread()}: {e}")

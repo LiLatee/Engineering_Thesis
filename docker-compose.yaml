@@ -201,6 +201,7 @@ services:
     ports:
       - 5002:5002
       - 5001:5001
+      - 5004:5004
     stdin_open: true
     tty: true
 

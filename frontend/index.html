@@ -15,7 +15,12 @@
 </head>
 <body>
     <div class="container" style="padding-top: 32px">
-        <a class="waves-effect waves-light btn start-button">start processing samples</a>
+<!-- TODO: default values for inputs -->
+      Training dataset size: <input type="number" placeholder="10000" id="training_dataset_size"><br>
+      Number of samples between model updates: <input type="number" placeholder="1000" id="samples_model_updates"><br>
+      <input type="submit" class="waves-effect waves-light btn start-button" value="start processing samples">
+    </div>
+    <div class="container" style="padding-top: 32px">
         <h4>Processed samples:</h4>
         <h4 id="samples">0</h4>
     </div>
@@ -26,6 +31,12 @@
         <div id="auc-roc"></div>
     </div>
     <script type="text/javascript">
+        function change_parameters(training_dataset_size, samples_model_updates){
+            alert(training_dataset_size.value);
+            document.getElementById('form_parameters')[0].placeholder = training_dataset_size.value;
+            return 0;
+        }
+
         Plotly.plot("correct-predictions", [
                 {y: [0], x: 0, name: "model 1"},
                 {y: [0], x: 0, name: "model 2"},
@@ -55,7 +66,12 @@
 
         start_button.onclick = async function (event) {
             console.log('start');
-            ws_client.send('start');
+            let message = {
+                'start': true,
+                'training_dataset_size': document.getElementById('training_dataset_size').value,
+                'samples_model_updates': document.getElementById('samples_model_updates').value
+            };
+            ws_client.send(JSON.stringify(message));
             ws_eval.send('start');
         };
 
