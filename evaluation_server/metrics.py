@@ -50,9 +50,9 @@ def get_roc_auc_score(samples: List) -> float:
 
 def get_f1_score(samples: List) -> float:
     y_true = [int(float(sample_bytes_to_json(sample).get("sale"))) for sample in samples]
-    y_scores = [float(sample_bytes_to_json(sample).get("probabilities")[6:9]) for sample in samples]
+    y_pred = [int(float(sample_bytes_to_json(sample).get("predicted"))) for sample in samples]
 
-    return f1_score(y_true, y_scores)
+    return f1_score(y_true, y_pred)
 
 
 def sample_bytes_to_json(sample: bytes) -> Union[str, Any]:

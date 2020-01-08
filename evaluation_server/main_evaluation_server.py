@@ -84,7 +84,7 @@ class EvaluationServer:
     def calculate_roc_auc_score(self, samples):
         return get_roc_auc_score(samples)
 
-    def calculate_f1_auc_score(self, samples):
+    def calculate_f1_score(self, samples):
         return get_f1_score(samples)
 
 
