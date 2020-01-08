@@ -1,7 +1,7 @@
 import json
 from typing import List, Union, Any
 from sklearn.metrics import roc_auc_score
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import f1_score
 
 
 def get_num_of_good_predictions(samples: List[bytes]) -> int:
@@ -46,6 +46,13 @@ def get_roc_auc_score(samples: List) -> float:
     # file.write('\n')
     # file.close()
     return roc_auc_score(y_true, y_scores)
+
+
+def get_f1_score(samples: List) -> float:
+    y_true = [int(float(sample_bytes_to_json(sample).get("sale"))) for sample in samples]
+    y_scores = [float(sample_bytes_to_json(sample).get("probabilities")[6:9]) for sample in samples]
+
+    return f1_score(y_true, y_scores)
 
 
 def sample_bytes_to_json(sample: bytes) -> Union[str, Any]:
