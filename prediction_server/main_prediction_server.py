@@ -7,7 +7,7 @@ import json
 import time
 import pickle
 
-NUMBER_OF_SAMPLES_BEFORE_UPDATE = 50000
+NUMBER_OF_SAMPLES_BEFORE_UPDATE = 10000
 NUMBER_OF_MODELS = 8
 
 context = zmq.Context()

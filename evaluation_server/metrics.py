@@ -21,7 +21,8 @@ def is_prediction_correct(sample: dict) -> bool:
 
 def get_roc_auc_score(samples: List) -> float:
     y_true = [int(float(sample_bytes_to_json(sample).get("sale"))) for sample in samples]
-    y_scores = [float(sample_bytes_to_json(sample).get("probabilities")[6:9]) for sample in samples]
+    # y_scores = [float(sample_bytes_to_json(sample).get("probabilities")[6:9]) for sample in samples]
+    y_scores = [float(json.loads(sample_bytes_to_json(sample).get("probabilities"))[1]) for sample in samples]
 
     # print('y_true:', y_true, flush=True)
     # print('y_true:', len(y_true), flush=True)
@@ -30,6 +31,20 @@ def get_roc_auc_score(samples: List) -> float:
     # return roc_auc_score(y_scores, y_true)
     # tn, fp, fn, tp = confusion_matrix(y_true, y_scores).ravel()
     # print(f"confusion matrix tn, fp, fn, tp = {tn, fp, fn, tp}")
+
+
+    # file2 = open('test2.txt', 'a+')
+    # file2.write(str(sample_bytes_to_json(samples[3]).get("probabilities")[6:9]))
+    # file2.write('\n')
+    # file2.close()
+    #
+    # file = open('test.txt','a+')
+    # file.write(str(y_true))
+    # file.write('\n')
+    # file.write(str(y_scores))
+    # file.write('\n')
+    # file.write('\n')
+    # file.close()
     return roc_auc_score(y_true, y_scores)
 
 
