@@ -1,5 +1,5 @@
 numpy==1.16.2
-scikit-learn[alldeps]
+scikit-learn==0.22.1
 pandas==0.25.0
 Flask==1.1.1
 requests==2.22.0
