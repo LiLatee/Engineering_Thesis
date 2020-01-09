@@ -71,6 +71,4 @@ if __name__ == "__main__":
         model_info = pickle.loads(response.content)
         thread = threading.Thread(target=start_new_model, args=(model_info, number_of_samples_before_update))
         thread.start()
-        current_number_of_models = current_number_of_models + 1
-
-
+        current_number_of_models += 1
