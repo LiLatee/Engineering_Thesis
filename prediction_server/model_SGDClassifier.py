@@ -21,6 +21,7 @@ class ModelSGDClassifier:
     def __init__(self, model_info: ModelInfo = None) -> None:
         self.ModelInfo: ModelInfo = model_info
         self.model: SGDClassifier = model_info.model
+        self.standard_scaler = model_info.standard_scaler
         self.df_product_clicks_views = model_info.df_product_clicks_views
         # self.LabelEncoders_dict = None
 
@@ -42,16 +43,17 @@ class ModelSGDClassifier:
         product_id = sample_dict['product_id']
         try:
             clicks, views = self.df_product_clicks_views.loc[self.df_product_clicks_views['product_id'] == product_id, ['clicks', 'views']].values.ravel()
-            sample_dict['clicks'] = clicks
-            sample_dict['views'] = views
             sample_dict['clicks_views_ratio'] = float(clicks/views)
         except ValueError:
-            sample_dict['clicks'] = 0
-            sample_dict['views'] = 0
             sample_dict['clicks_views_ratio'] = 0
-        list_of_required_features = ['clicks_views_ratio', 'device_type', 'audience_id', 'partner_id',
-                                     'product_brand', 'views', 'clicks', 'nb_clicks_1week', 'product_gender']
+        list_of_required_features = ['product_price','clicks_views_ratio','device_type','audience_id','product_brand',
+                                    'partner_id','product_gender','product_age_group','nb_clicks_1week']
+
+        numerical_features_std = self.standard_scaler.transform([[sample_dict.get('nb_clicks_1week'), sample_dict.get('product_price')]]).ravel()
         sample_required_features = {key: sample_dict.get(key) for key in list_of_required_features}
+        sample_required_features['nb_clicks_1week'] = numerical_features_std[0]
+        sample_required_features['product_price'] = numerical_features_std[1]
+
         sample_list_of_features = list(sample_required_features.values())
 
         probabilities = self.model.predict_proba([sample_list_of_features])[0].ravel()

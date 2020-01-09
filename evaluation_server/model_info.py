@@ -9,4 +9,5 @@ class ModelInfo:
     last_sample_id: str = None
     model: SGDClassifier = None
     LabelEncoders_dict = None
+    standard_scaler = None
     df_product_clicks_views = None

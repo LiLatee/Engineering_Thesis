@@ -24,10 +24,12 @@
         <h4 id="samples">0</h4>
     </div>
     <div class="container center">
-        <h5>Correct predictions [%]:</h5>
+        <h5>Accuracy:</h5>
         <div id="correct-predictions"></div>
         <h5>Auc-Roc:</h5>
         <div id="auc-roc"></div>
+        <h5>F1 score:</h5>
+        <div id="f1"></div>
     </div>
     <script type="text/javascript">
         Plotly.plot("correct-predictions", [
@@ -42,6 +44,17 @@
         ]);
 
         Plotly.plot("auc-roc", [
+                {y: [0], x: 0, name: "model 1"},
+                {y: [0], x: 0, name: "model 2"},
+                {y: [0], x: 0, name: "model 3"},
+                {y: [0], x: 0, name: "model 4"},
+                {y: [0], x: 0, name: "model 5"},
+                {y: [0], x: 0, name: "model 6"},
+                {y: [0], x: 0, name: "model 7"},
+                {y: [0], x: 0, name: "model 8"}
+        ]);
+
+        Plotly.plot("f1", [
                 {y: [0], x: 0, name: "model 1"},
                 {y: [0], x: 0, name: "model 2"},
                 {y: [0], x: 0, name: "model 3"},
@@ -77,12 +90,14 @@
             console.log(message);
             let list_of_correct_prediction_ratio = [[0], [0], [0], [0], [0], [0], [0], [0]];
             let list_of_aucroc = [[0], [0], [0], [0], [0], [0], [0], [0]];
+            let list_of_f1 = [[0], [0], [0], [0], [0], [0], [0], [0]];
             for(var key in message) {
                 if (message.hasOwnProperty(key)) {
                     model = message[key];
                     console.log(model);
                     list_of_correct_prediction_ratio[model.id - 1] = [model["correct_predictions"] / model["processed_samples"]];
                     list_of_aucroc[model.id - 1] = [model["roc_auc_score"].toPrecision([3])];
+                    list_of_f1[model.id - 1] = [model["f1_score"].toPrecision([3])];
                     if (model['processed_samples'] > max_currently_processed_samples) {
                         max_currently_processed_samples = model['processed_samples'];
                     }
@@ -103,6 +118,12 @@
               },
               [0,1,2,3,4,5,6,7]);
 
+            Plotly.extendTraces(
+              "f1",
+              {
+                  y: list_of_f1
+              },
+              [0,1,2,3,4,5,6,7]);
             if(cnt > 500) {
                 Plotly.relayout("correct-predictions",{
                     xaxis: {
@@ -110,6 +131,11 @@
                     }
                 });
                 Plotly.relayout("auc-roc",{
+                    xaxis: {
+                        range: [cnt-500,cnt]
+                    }
+                });
+                Plotly.relayout("f1",{
                     xaxis: {
                         range: [cnt-500,cnt]
                     }

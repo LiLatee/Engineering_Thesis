@@ -34,6 +34,7 @@ class ModelSGDClassifier:
         self.model: SGDClassifier = None
         self.last_sample_id: str = None
         self.df_product_clicks_views = None
+        self.sc = None
         # self.LabelEncoders_dict = None
         self.load_last_model()
 
@@ -61,9 +62,6 @@ class ModelSGDClassifier:
         # df[self.names_of_columns_with_ids] = df[self.names_of_columns_with_ids].apply(
         #     lambda x: self.LabelEncoders_dict[x.name].transform(x))
 
-        df['day_of_week'] = pd.to_datetime(df['click_timestamp'], unit='s').dt.weekday
-        df['hour'] = pd.to_datetime(df['click_timestamp'], unit='s').dt.hour
-
         df_product_clicks = df[['sale', 'product_id']]
         df_product_clicks = df_product_clicks.groupby('product_id').sum().reset_index()
         df = pd.merge(df,
@@ -88,19 +86,18 @@ class ModelSGDClassifier:
         df_product_clicks_views = df[['product_id', 'clicks', 'views']]
         self.df_product_clicks_views = df_product_clicks_views
 
+        self.sc = StandardScaler()
+        df[['nb_clicks_1week', 'product_price']] = self.sc.fit_transform(df[['nb_clicks_1week', 'product_price']].to_numpy())
+
+        x_train = df[['product_price', 'clicks_views_ratio', 'device_type', 'audience_id', 'product_brand',
+                      'partner_id', 'product_gender', 'product_age_group', 'nb_clicks_1week']]
+        y_train = df['sale']
+
         number_of_samples = df.shape[0]
         counter = collections.Counter(df['sale'])
         percent_of_ones = counter[1] / number_of_samples
-
-        model = SGDClassifier(loss='log', random_state=1, tol=1e-3, max_iter=1000, penalty='l1', alpha=1e-05, n_jobs=-1,
+        model = SGDClassifier(loss='log', max_iter=100, penalty='l1', alpha=0.0001, n_jobs=-1,
                               class_weight={0: percent_of_ones, 1: 1 - percent_of_ones})
-        x_train = df[
-            ['clicks_views_ratio', 'device_type', 'audience_id', 'partner_id', 'product_brand', 'views', 'clicks',
-             'nb_clicks_1week', 'product_gender']]
-        y_train = df['sale']
-
-        # x_train = df.loc[:, df.columns != 'sale'] # todo wywalić timestamp df.loc[:,~df.columns.isin(['sale','click_timestamp])]
-        # y_train = df['sale']
 
         model.fit(x_train, y_train)
 
@@ -138,7 +135,7 @@ class ModelSGDClassifier:
                 return json.JSONEncoder.default(self, obj)
 
         cass = CassandraClient(table_name='all_stored_samples')
-        samples_list_of_dicts = cass.get_all_samples_as_list_of_dicts() # todo tu są tylko brane dodane i omijane te ze zbioru treningowego, w trakcie
+        samples_list_of_dicts = cass.get_all_samples_as_list_of_dicts()
         self.create_model_and_save(json.dumps(samples_list_of_dicts, cls=UUIDEncoder), update=True)
         print("LOG: updating model DONE")
 
@@ -155,6 +152,7 @@ class ModelSGDClassifier:
         model_info.last_sample_id = self.last_sample_id
         model_info.model = self.model
         model_info.df_product_clicks_views = self.df_product_clicks_views
+        model_info.standard_scaler = self.sc
         # model_info.LabelEncoders_dict = self.LabelEncoders_dict
 
         requests.request(method='POST', url='http://sqlite_api:8764/models', data=pickle.dumps(model_info))
@@ -170,6 +168,7 @@ class ModelSGDClassifier:
             return
         self.model = model_info.model
         self.df_product_clicks_views = model_info.df_product_clicks_views # todo niepotrzebne?
+        self.sc = model_info.standard_scaler
         # self.LabelEncoders_dict = model_info.LabelEncoders_dict
 
         print("LOG: " + "Model loaded.")

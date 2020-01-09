@@ -9,7 +9,6 @@ headers = ['sale', 'sales_amount_in_euro', 'time_delay_for_conversion', 'click_t
            'product_country', 'product_id', 'product_title', 'partner_id', 'user_id']
 options = {
     'filepath_or_buffer': 'data/CriteoSearchData-sorted-no-duplicates-LabelEncoded.csv',
-    # 'filepath_or_buffer': 'data/CriteoSearchData-sorted-no-duplicates-LabelEncoded-with-product-id.csv',
     "chunksize": 3,
     "nrows": 1000000,
     "skiprows": default_train_model_samples_number,

@@ -5,9 +5,9 @@ import time
 from client_cass import CassandraClient
 from client_redis import DatabaseRedis
 from typing import Union, Any
-from metrics import is_prediction_correct, get_roc_auc_score
+from metrics import is_prediction_correct, get_roc_auc_score, get_f1_score
 import threading
-import requests
+
 
 class EvaluationServer:
 
@@ -63,15 +63,18 @@ class EvaluationServer:
             # requests.request(method='POST', url='http://cassandra_api:9042/samples', data=json.dumps(sample_json))
             # self.db.insert_sample_as_dict(sample_json)
         roc_auc_score = 0
+        f1_score = 0
         if model.num_processed_samples > 50:
             roc_auc_score = self.calculate_roc_auc_score(processed_samples)
+            f1_score = self.calculate_f1_score(processed_samples)
         print("Auc roc = " + str(roc_auc_score))
         print(f"Correct predictions={model.correct_predictions}")
         message.append({
             "id": model.model_id,
             "processed_samples": model.num_processed_samples,
             "correct_predictions": model.correct_predictions,
-            "roc_auc_score": roc_auc_score
+            "roc_auc_score": roc_auc_score,
+            "f1_score": f1_score
         })
 
     def check_correct_prediction(self, model, sample: Union[str, Any]) -> None:
@@ -80,6 +83,9 @@ class EvaluationServer:
 
     def calculate_roc_auc_score(self, samples):
         return get_roc_auc_score(samples)
+
+    def calculate_f1_score(self, samples):
+        return get_f1_score(samples)
 
 
 if __name__ == "__main__":
