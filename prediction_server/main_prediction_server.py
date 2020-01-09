@@ -4,7 +4,6 @@ import threading
 import zmq
 from model_SGDClassifier import ModelSGDClassifier
 import json
-import time
 import pickle
 
 NUMBER_OF_MODELS = 8
@@ -19,13 +18,14 @@ list_counter_to_update_model = [0] * (NUMBER_OF_MODELS+1) # liczba równoległyc
 
 def start_new_model(ModelInfo_object, number_of_samples_before_update):
     model = ModelSGDClassifier(ModelInfo_object)
-    print("New model started")
+    print("New model has started")
+    print(f"number_of_samples_before_update={number_of_samples_before_update}")
 
     def callback(ch, method, properties, body):
         global list_counter_to_update_model
 
         if list_counter_to_update_model[ModelInfo_object.id] >= number_of_samples_before_update:
-            print("Updating model started")
+            print("Updating model has started")
             response = requests.request(method="GET",
                                         url='http://sqlite_api:8764/models/get_id_of_last_specified_model/?model_name=SGDClassifier')
             last_model_id = int(response.content)
@@ -34,7 +34,6 @@ def start_new_model(ModelInfo_object, number_of_samples_before_update):
             list_counter_to_update_model[ModelInfo_object.id] = 0
 
         model.predict(sample_json=body)
-        # print("Prediction was made")
         list_counter_to_update_model[ModelInfo_object.id] = list_counter_to_update_model[ModelInfo_object.id] + 1
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -58,13 +57,19 @@ if __name__ == "__main__":
     info_receiver = context.socket(zmq.PULL)
     info_receiver.bind("tcp://0.0.0.0:5003")  # queue to inform about new model
 
+    number_of_samples_before_update = 0
     current_number_of_models = 0
+
     while current_number_of_models != NUMBER_OF_MODELS:
         message = info_receiver.recv_string()  # waits for signal to start new model
+        message_json = json.loads(message)
+        print(f"Received message {message_json}")
+        if "number_of_samples_before_update" in message_json:
+            number_of_samples_before_update = message_json.get("number_of_samples_before_update")
+
         response = requests.request(method='GET', url='http://sqlite_api:8764/models/get_last')
-        print(message)
         model_info = pickle.loads(response.content)
-        thread = threading.Thread(target=start_new_model, args=(model_info, 1000))
+        thread = threading.Thread(target=start_new_model, args=(model_info, number_of_samples_before_update))
         thread.start()
         current_number_of_models = current_number_of_models + 1
 
