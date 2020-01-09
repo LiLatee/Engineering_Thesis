@@ -2,7 +2,7 @@ import pandas as pd
 import threading
 
 not_sorted_data_file_name = '../data/CriteoSearchData.csv'
-train_model_samples_number = 20000
+train_model_samples_number = 100000
 headers = ['sale', 'sales_amount_in_euro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
            'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',
            'product_brand', 'product_category_1', 'product_category_2', 'product_category_3',
@@ -11,7 +11,7 @@ headers = ['sale', 'sales_amount_in_euro', 'time_delay_for_conversion', 'click_t
 options = {
     'filepath_or_buffer': 'data/CriteoSearchData-sorted-no-duplicates-LabelEncoded.csv',
     "chunksize": 3,
-    "nrows": 100000,
+    "nrows": 1000000,
     "skiprows": train_model_samples_number,
     "sep": ',',
     "usecols": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22],

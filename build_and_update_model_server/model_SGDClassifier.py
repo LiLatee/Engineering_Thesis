@@ -96,7 +96,7 @@ class ModelSGDClassifier:
         number_of_samples = df.shape[0]
         counter = collections.Counter(df['sale'])
         percent_of_ones = counter[1] / number_of_samples
-        model = SGDClassifier(loss='log', random_state=1, max_iter=100, penalty='l1', alpha=0.0001, n_jobs=-1,
+        model = SGDClassifier(loss='log', max_iter=100, penalty='l1', alpha=0.0001, n_jobs=-1,
                               class_weight={0: percent_of_ones, 1: 1 - percent_of_ones})
 
         model.fit(x_train, y_train)
