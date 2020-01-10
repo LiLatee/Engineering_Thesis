@@ -25,50 +25,57 @@ class EvaluationServer:
         while True:
             message = self.process_latest_samples_and_create_message()
             if len(message) is not 0:
+                print(message)
                 await websocket.send(json.dumps(message))
 
     def process_latest_samples_and_create_message(self) -> list:
         message = []
-        # message = {}
         number_od_models = sum([model.key_exists() for model in self.all_redis_connections])
-        threads = []
-        for index in range(number_od_models):
-            thread = threading.Thread(target=self.get_message_for_one_model,
-                                      args=(self.all_redis_connections[index], message, index))
-            threads.append(thread)
-            thread.start()
+        if number_od_models > 0:
+            threads = []
+            thread_first_model = threading.Thread(target=self.process_first_model,
+                                                  args=(self.all_redis_connections[0], message))
+            threads.append(thread_first_model)
+            thread_first_model.start()
 
-        for thread in threads:
-            thread.join()
+            for index in range(1, number_od_models):
+                thread = threading.Thread(target=self.process_next_models,
+                                          args=(self.all_redis_connections[index], message))
+                threads.append(thread)
+                thread.start()
+
+            for thread in threads:
+                thread.join()
         time.sleep(5)
         return message
 
-    def get_message_for_one_model(self, model, message, index):
-        print(model.model_id)
-        print(model.num_processed_samples)
-        print(model.correct_predictions)
-        print(f"{threading.current_thread()} started")
+    def process_first_model(self, model, message):
+        print(f"{threading.current_thread()} with model {model.model_id} started. "
+              f"Processed samples = {model.num_processed_samples}")
         processed_samples = model.get_all_samples_as_list_of_json()
         for sample in processed_samples:
-            sample_json = json.loads(sample.decode('utf8')) # TODO to już raczej powinno być sample_dict, bo jak robimy load to json zamienia się w słownik, racja? bo ja nigdy nwm ja traktować jsona, jako stringa?
+            sample_json = json.loads(sample.decode(
+                'utf8'))  # TODO to już raczej powinno być sample_dict, bo jak robimy load to json zamienia się w słownik, racja? bo ja nigdy nwm ja traktować jsona, jako stringa?
+            del sample_json['predicted']
+            del sample_json['probabilities']
+            self.cass_connection_for_all_stored_samples.insert_sample(sample_json)
+        self.evaluate_model(model, message, processed_samples)
 
-            sample_dict_without_predicted_columns = sample_json.copy()
-            del sample_dict_without_predicted_columns['predicted']
-            del sample_dict_without_predicted_columns['probabilities']
-            self.cass_connection_for_all_stored_samples.insert_sample(sample_dict_without_predicted_columns)
+    def process_next_models(self, model, message):
+        processed_samples = model.get_all_samples_as_list_of_json()
+        self.evaluate_model(model, message, processed_samples)
 
+    def evaluate_model(self, model, message, processed_samples):
+        for sample in processed_samples:
+            sample_json = json.loads(sample.decode('utf8'))
             model.num_processed_samples += 1
             self.check_correct_prediction(model, sample_json)
             self.all_cass_connections_for_each_model[model.model_id - 1].insert_sample(sample_json)
-            # requests.request(method='POST', url='http://cassandra_api:9042/samples', data=json.dumps(sample_json))
-            # self.db.insert_sample_as_dict(sample_json)
         roc_auc_score = 0
         f1_score = 0
         if model.num_processed_samples > 50:
             roc_auc_score = self.calculate_roc_auc_score(processed_samples)
             f1_score = self.calculate_f1_score(processed_samples)
-        print("Auc roc = " + str(roc_auc_score))
-        print(f"Correct predictions={model.correct_predictions}")
         message.append({
             "id": model.model_id,
             "processed_samples": model.num_processed_samples,
@@ -93,4 +100,3 @@ if __name__ == "__main__":
     sending_evaluation_metrics = websockets.serve(evaluation_server.wait_for_start, "0.0.0.0", 8766)
     asyncio.get_event_loop().run_until_complete(sending_evaluation_metrics)
     asyncio.get_event_loop().run_forever()
-
