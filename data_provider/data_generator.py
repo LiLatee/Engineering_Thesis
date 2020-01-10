@@ -1,6 +1,6 @@
 import pandas as pd
 import threading
-
+import uuid
 default_train_model_samples_number = 50000
 headers = ['sale', 'sales_amount_in_euro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
            'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',
@@ -41,8 +41,11 @@ def threadsafe_generator(generator_function):
 
 @threadsafe_generator
 def data_generator():
+    # df = pd.read_csv(**options)
+    # df['id'] = [uuid.uuid1() for _ in range(len(df.index))]
     for chunk in pd.read_csv(**options):
         for index, row in chunk.iterrows():
+            row['id'] = uuid.uuid1()
             yield row
 
 

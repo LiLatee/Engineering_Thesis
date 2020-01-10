@@ -50,7 +50,7 @@ class EvaluationServer:
         print(f"{threading.current_thread()} started")
         processed_samples = model.get_all_samples_as_list_of_json()
         for sample in processed_samples:
-            sample_json = json.loads(sample.decode('utf8')) # TODO to już raczej powinno być sample_dict, bo jak robimy load to json zamienia się w słownik, racja? bo ja nigdy nwm ja traktować jsona, jako stringa?
+            sample_json = json.loads(sample.decode('utf8'))
 
             sample_dict_without_predicted_columns = sample_json.copy()
             del sample_dict_without_predicted_columns['predicted']

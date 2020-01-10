@@ -7,7 +7,7 @@ import pika
 import time
 import random
 import json
-
+import uuid
 
 number_of_threads = 1
 
@@ -43,6 +43,9 @@ async def process_all_samples(training_dataset_size) -> None:
 
 def send_samples_for_model_training(training_dataset_size) -> None:
     data = data_generator.get_train_data(training_dataset_size)
+
+    data['id'] = [uuid.uuid1() for _ in range(len(data.index))]
+
     context = zmq.Context()
     fit_socket = context.socket(zmq.PAIR)
     fit_socket.connect('tcp://build_and_update_model_server:5001')
