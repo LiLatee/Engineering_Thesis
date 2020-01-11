@@ -3,8 +3,8 @@
 # 2. cqlsh
 
 import json
-
 import uuid
+
 from cassandra.cluster import Cluster, Session
 from typing import List, Dict, Union
 from cassandra.query import dict_factory
@@ -220,7 +220,7 @@ class CassandraClient:
                                       %(user_id)s
                                       )"""
             variables = {
-                         'id': uuid.uuid1(),
+                         'id': uuid.UUID(str(sample.get("id"))),
                          'sale': str(sample.get("sale")),
                          'sales_amount_in_euro': str(sample.get("sales_amount_in_euro")),
                          'time_delay_for_conversion': str(sample.get("time_delay_for_conversion")),
@@ -303,7 +303,7 @@ class CassandraClient:
                                       %(probabilities)s
                                       )"""
             variables = {
-                'id': uuid.uuid1(),
+                'id': uuid.UUID(str(sample.get("id"))),
                 'sale': str(sample.get("sale")),
                 'sales_amount_in_euro': str(sample.get("sales_amount_in_euro")),
                 'time_delay_for_conversion': str(sample.get("time_delay_for_conversion")),
@@ -404,16 +404,21 @@ class CassandraClient:
 
         return result
 
+    def get_number_of_samples_before_id(self, id=None):
+        if id is None:
+            query = "SELECT COUNT(*) FROM " + str(self.TABLE_NAME)
+            query_result = self.session.execute(query)
+        else:
+            query = "SELECT COUNT(*) FROM " + str(self.TABLE_NAME) + " WHERE id > " + str(id) + " ALLOW FILTERING"
+            query_result = self.session.execute(query)
+
+        return query_result[0]['count']
 
 if __name__ == '__main__':
-    db = CassandraClient()
+    db = CassandraClient('all_stored_samples')
     # db.restart_cassandra()
     # db.add_some_data()
-    print(len(db.get_samples_for_update_model_as_list_of_dicts()))
-    id = db.get_last_sample_id()
-    db.add_some_data()
-    print(len(db.get_samples_for_update_model_as_list_of_dicts(id)))
-    print(len(db.get_samples_for_update_model_as_list_of_dicts()))
+    print(db.get_number_of_samples_before_id(uuid.UUID('531df1c8-340a-11ea-a51a-0242ac120007')))
     # id = db.get_last_sample_id()
     # print(db.get_samples_for_update_model_as_list_of_dicts(id))
     # print(type(db.get_samples_for_update_model_as_list_of_dicts(id)[0]))

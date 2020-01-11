@@ -12,6 +12,12 @@ import uuid
 number_of_threads = 1
 
 
+def encoder(obj):
+    if isinstance(obj, uuid.UUID):
+        # if the obj is uuid, we simply return the value of uuid
+        return obj.hex
+    return json.JSONEncoder.default(obj)
+
 async def consumer_handler(websocket, path) -> None:
     async for message in websocket:
         message_obj = json.loads(message)
@@ -42,6 +48,8 @@ async def process_all_samples(training_dataset_size) -> None:
 
 
 def send_samples_for_model_training(training_dataset_size) -> None:
+
+
     data = data_generator.get_train_data(training_dataset_size)
 
     data['id'] = [uuid.uuid1() for _ in range(len(data.index))]
@@ -49,7 +57,7 @@ def send_samples_for_model_training(training_dataset_size) -> None:
     context = zmq.Context()
     fit_socket = context.socket(zmq.PAIR)
     fit_socket.connect('tcp://build_and_update_model_server:5001')
-    fit_socket.send_string(data.to_json(orient='records'))  # convert from bytes to string
+    fit_socket.send_string(data.to_json(orient='records', default_handler=encoder))  # convert from bytes to string
     result = fit_socket.recv()  # wait for end of fitting
     print('Data for training was send. ' + str(data.shape))
 
@@ -63,7 +71,7 @@ def thread_function(generator, index):
     while True:
         try:
             data = next(generator)
-            channel.basic_publish(exchange='prediction_queue_fanout', routing_key='', body=data.to_json())
+            channel.basic_publish(exchange='prediction_queue_fanout', routing_key='', body=data.to_json(default_handler=encoder))
             # print(f"{threading.current_thread()} sent data to /predict; no={number_of_sent_samples}")
             time.sleep(rand.randint(0, 500)/10000)
         except StopIteration as e:

@@ -3,8 +3,8 @@
 # 2. cqlsh
 
 import json
-
 import uuid
+
 from cassandra.cluster import Cluster, Session
 from typing import List, Dict, Union
 from cassandra.query import dict_factory
@@ -220,7 +220,7 @@ class CassandraClient:
                                       %(user_id)s
                                       )"""
             variables = {
-                         'id': uuid.uuid1(),
+                         'id': uuid.UUID(str(sample.get("id"))),
                          'sale': str(sample.get("sale")),
                          'sales_amount_in_euro': str(sample.get("sales_amount_in_euro")),
                          'time_delay_for_conversion': str(sample.get("time_delay_for_conversion")),
@@ -303,7 +303,7 @@ class CassandraClient:
                                       %(probabilities)s
                                       )"""
             variables = {
-                'id': uuid.uuid1(),
+                'id': uuid.UUID(str(sample.get("id"))),
                 'sale': str(sample.get("sale")),
                 'sales_amount_in_euro': str(sample.get("sales_amount_in_euro")),
                 'time_delay_for_conversion': str(sample.get("time_delay_for_conversion")),
