@@ -407,13 +407,13 @@ class CassandraClient:
     def get_number_of_samples_before_id(self, id=None):
         print(f"ID={id}")
         if id is None:
-            query = "SELECT COUNT(*) FROM " + str(self.TABLE_NAME)
+            query = "SELECT COUNT(*) FROM " + 'all_stored_samples'
             query_result = self.session.execute(query)
         else:
-            query = "SELECT COUNT(*) FROM " + str(self.TABLE_NAME) + " WHERE id < " + str(id) + " ALLOW FILTERING"
+            query = "SELECT COUNT(*) FROM " + 'all_stored_samples' + " WHERE id < " + str(id) + " ALLOW FILTERING"
             query_result = self.session.execute(query)
 
-        print(f"RESULT={query_result[0]['count']}")
+        # print(f"RESULT={query_result[0]['count']}")
         return query_result[0]['count']
 
 if __name__ == '__main__':

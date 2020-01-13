@@ -380,7 +380,6 @@ class CassandraClient:
 
         result = []
         for sample in query_result:
-            del sample['id']
             result.append(sample)
 
         return result
@@ -405,16 +404,24 @@ class CassandraClient:
 
         return result
 
+    def get_number_of_samples_before_id(self, id=None):
+        print(f"ID={id}")
+        if id is None:
+            query = "SELECT COUNT(*) FROM " + 'all_stored_samples'
+            query_result = self.session.execute(query)
+        else:
+            query = "SELECT COUNT(*) FROM " + 'all_stored_samples' + " WHERE id < " + str(id) + " ALLOW FILTERING"
+            query_result = self.session.execute(query)
+
+        # print(f"RESULT={query_result[0]['count']}")
+        return query_result[0]['count']
 
 if __name__ == '__main__':
-    db = CassandraClient()
+    db = CassandraClient('all_stored_samples')
     # db.restart_cassandra()
     # db.add_some_data()
-    print(len(db.get_samples_for_update_model_as_list_of_dicts()))
-    id = db.get_last_sample_id()
-    db.add_some_data()
-    print(len(db.get_samples_for_update_model_as_list_of_dicts(id)))
-    print(len(db.get_samples_for_update_model_as_list_of_dicts()))
+
+    print(db.get_number_of_samples_before_id(uuid.UUID('531df1c8-340a-11ea-a51a-0242ac120007')))
     # id = db.get_last_sample_id()
     # print(db.get_samples_for_update_model_as_list_of_dicts(id))
     # print(type(db.get_samples_for_update_model_as_list_of_dicts(id)[0]))

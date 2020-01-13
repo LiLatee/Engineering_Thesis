@@ -113,9 +113,9 @@
                     console.log(model);
                     // TODO: set accurate number of first processed sample
                     if (data_accuracy[model.id - 1].first_processed_sample === -1){
-                        data_accuracy[model.id - 1].first_processed_sample = max_currently_processed_samples;
-                        data_auc_roc[model.id - 1].first_processed_sample = max_currently_processed_samples;
-                        data_f1[model.id - 1].first_processed_sample = max_currently_processed_samples;
+                        data_accuracy[model.id - 1].first_processed_sample = model['first_processed_sample'];
+                        data_auc_roc[model.id - 1].first_processed_sample = model['first_processed_sample'];
+                        data_f1[model.id - 1].first_processed_sample = model['first_processed_sample'];
                     }
                     set_x(model);
                     set_y(model);

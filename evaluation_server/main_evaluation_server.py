@@ -67,11 +67,12 @@ class EvaluationServer:
         self.evaluate_model(model, message, processed_samples)
 
     def evaluate_model(self, model, message, processed_samples):
+        evaluated_number_of_samples = int(self.all_cass_connections_for_each_model[model.model_id - 1].get_number_of_samples_before_id(
+            id=uuid.UUID(json.loads(processed_samples[-1])['id']))) - 10000 # todo minus zbiór treningowy
         for sample in processed_samples:
             sample_dict = json.loads(sample.decode('utf8'))
             model.num_processed_samples += 1
             self.check_correct_prediction(model, sample_dict)
-            # self.all_cass_connections_for_each_model[model.model_id - 1].get_number_of_samples_before_id(id=uuid.UUID(sample_dict['id']))
             self.all_cass_connections_for_each_model[model.model_id - 1].insert_sample(sample_dict)
         roc_auc_score = 0
         f1_score = 0
@@ -84,7 +85,7 @@ class EvaluationServer:
             "correct_predictions": model.correct_predictions,
             "roc_auc_score": roc_auc_score,
             "f1_score": f1_score,
-            "first_processed_sample": self.get_models_first_sample_number(model, processed_samples[0])
+            "first_processed_sample": evaluated_number_of_samples
         })
 
     def get_models_first_sample_number(self, model, first_sample):
