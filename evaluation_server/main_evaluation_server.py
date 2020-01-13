@@ -15,6 +15,8 @@ class EvaluationServer:
         self.all_redis_connections = [DatabaseRedis(i) for i in range(1, 9)]
         self.all_cass_connections_for_each_model = [CassandraClient(table_name='model_' + str(i)) for i in range(1, 9)]
         self.cass_connection_for_all_stored_samples = CassandraClient(table_name='all_stored_samples')
+        self.models_first_sample_numbers = [-1 for _ in range(0, 8)]
+        self.models_first_sample_numbers[0] = 0
 
     async def wait_for_start(self, websocket, path) -> None:
         async for message in websocket:
@@ -69,7 +71,7 @@ class EvaluationServer:
             sample_dict = json.loads(sample.decode('utf8'))
             model.num_processed_samples += 1
             self.check_correct_prediction(model, sample_dict)
-            self.all_cass_connections_for_each_model[model.model_id - 1].get_number_of_samples_before_id(id=uuid.UUID(sample_dict['id']))
+            # self.all_cass_connections_for_each_model[model.model_id - 1].get_number_of_samples_before_id(id=uuid.UUID(sample_dict['id']))
             self.all_cass_connections_for_each_model[model.model_id - 1].insert_sample(sample_dict)
         roc_auc_score = 0
         f1_score = 0
@@ -81,8 +83,17 @@ class EvaluationServer:
             "processed_samples": model.num_processed_samples,
             "correct_predictions": model.correct_predictions,
             "roc_auc_score": roc_auc_score,
-            "f1_score": f1_score
+            "f1_score": f1_score,
+            "first_processed_sample": self.get_models_first_sample_number(model, processed_samples[0])
         })
+
+    def get_models_first_sample_number(self, model, first_sample):
+        if self.models_first_sample_numbers[model.model_id - 1] is not -1:
+            return self.models_first_sample_numbers[model.model_id - 1]
+        number_of_sample = self.all_cass_connections_for_each_model[model.model_id - 1].get_number_of_samples_before_id(id=uuid.UUID(json.loads(first_sample.decode('utf8')).get('id')))
+        self.models_first_sample_numbers[model.model_id - 1] = number_of_sample
+        print(f"MODEL {model.model_id}, number of first sample = {number_of_sample}")
+        return number_of_sample
 
     def check_correct_prediction(self, model, sample: Union[str, Any]) -> None:
         if is_prediction_correct(sample):

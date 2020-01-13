@@ -405,19 +405,22 @@ class CassandraClient:
         return result
 
     def get_number_of_samples_before_id(self, id=None):
+        print(f"ID={id}")
         if id is None:
             query = "SELECT COUNT(*) FROM " + str(self.TABLE_NAME)
             query_result = self.session.execute(query)
         else:
-            query = "SELECT COUNT(*) FROM " + str(self.TABLE_NAME) + " WHERE id > " + str(id) + " ALLOW FILTERING"
+            query = "SELECT COUNT(*) FROM " + str(self.TABLE_NAME) + " WHERE id < " + str(id) + " ALLOW FILTERING"
             query_result = self.session.execute(query)
 
+        print(f"RESULT={query_result[0]['count']}")
         return query_result[0]['count']
 
 if __name__ == '__main__':
     db = CassandraClient('all_stored_samples')
     # db.restart_cassandra()
     # db.add_some_data()
+
     print(db.get_number_of_samples_before_id(uuid.UUID('531df1c8-340a-11ea-a51a-0242ac120007')))
     # id = db.get_last_sample_id()
     # print(db.get_samples_for_update_model_as_list_of_dicts(id))
