@@ -405,7 +405,7 @@ class CassandraClient:
         return result
 
     def get_number_of_samples_before_id(self, id=None):
-        print(f"ID={id}")
+        # print(f"ID={id}")
         if id is None:
             query = "SELECT COUNT(*) FROM " + 'all_stored_samples'
             query_result = self.session.execute(query)

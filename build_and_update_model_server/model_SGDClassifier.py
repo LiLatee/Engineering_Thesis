@@ -25,24 +25,11 @@ RowAsDictType = Dict[str, Union[str, float, int]]
 class ModelSGDClassifier:
 
     def __init__(self) -> None:
-        # self.names_of_columns_with_ids = ['audience_id', 'device_type',
-        #                                   'partner_id', 'product_age_group', 'product_brand',
-        #                                   'product_category_1', 'product_category_2', 'product_category_3',
-        #                                   'product_category_4', 'product_category_5', 'product_category_6',
-        #                                   'product_category_7', 'product_country', 'product_gender', 'product_id',
-        #                                   'product_title', 'user_id']
         self.model: SGDClassifier = None
         self.last_sample_id: str = None
         self.df_product_clicks_views = None
         self.sc = None
-        # self.LabelEncoders_dict = None
         self.load_last_model()
-
-        # if self.LabelEncoders_dict is None:
-        #     file = open(
-        #         f"/home/marcin/PycharmProjects/Engineering_Thesis/build_and_update_model_server/LabelEncoders_dict.pickle",
-        #         "rb")
-        #     self.LabelEncoders_dict = pickle.load(file)
 
     def create_model_and_save(self, training_data_json: JSONType, update: bool = False) -> None:
         print("create_model_and_save")

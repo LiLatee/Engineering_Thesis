@@ -4,7 +4,7 @@ import pickle
 import data_preprocessing as dp
 # from client_SQLite import DatabaseSQLite
 from model_info import ModelInfo
-from client_redis import DatabaseRedis
+# from client_redis import DatabaseRedis
 
 from typing import List, Dict, Union, Any, Tuple
 from sklearn.linear_model import SGDClassifier
@@ -23,17 +23,10 @@ class ModelSGDClassifier:
         self.model: SGDClassifier = model_info.model
         self.standard_scaler = model_info.standard_scaler
         self.df_product_clicks_views = model_info.df_product_clicks_views
-        # self.LabelEncoders_dict = None
-
-        # if self.LabelEncoders_dict is None:
-        #     file = open(
-        #         f"/home/marcin/PycharmProjects/Engineering_Thesis/build_and_update_model_server/LabelEncoders_dict.pickle",
-        #         "rb")
-        #     self.LabelEncoders_dict = pickle.load(file)
 
         self.last_sample_id: int = model_info.last_sample_id
-        self.redis_DB: DatabaseRedis = DatabaseRedis(model_id=self.ModelInfo.id)
-        self.redis_DB.del_all_samples()
+        # self.redis_DB: DatabaseRedis = DatabaseRedis(model_id=self.ModelInfo.id)
+        # self.redis_DB.del_all_samples()
         # self.db: DatabaseSQLite = DatabaseSQLite() # todo usunąć
 
     def predict(self, sample_json: JSONType) -> Tuple[np.ndarray, np.ndarray]:
@@ -63,10 +56,12 @@ class ModelSGDClassifier:
             sample_dict_result['predicted'] = 1
 
         sample_dict_result['probabilities'] = json.dumps(list(probabilities))
-        self.redis_DB.rpush_sample(json_sample=json.dumps(sample_dict_result))
+
+        # self.redis_DB.rpush_sample(json_sample=json.dumps(sample_dict_result))
         # self.db.insert_sample_as_dict(sample_dict) #todo usunąć, bo to evaluation server dodaje do sql
 
-        return sample_dict_result['predicted'], probabilities
+        return sample_dict_result
+        # return sample_dict_result['predicted'], probabilities
 
 if __name__ == '__main__':
     pass

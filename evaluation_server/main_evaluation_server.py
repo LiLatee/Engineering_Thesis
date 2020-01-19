@@ -27,7 +27,7 @@ class EvaluationServer:
         while True:
             message = self.process_latest_samples_and_create_message()
             if len(message) is not 0:
-                print(message)
+                # print(message)
                 await websocket.send(json.dumps(message))
 
     def process_latest_samples_and_create_message(self) -> list:
@@ -52,8 +52,8 @@ class EvaluationServer:
         return message
 
     def process_first_model(self, model, message):
-        print(f"{threading.current_thread()} with model {model.model_id} started. "
-              f"Processed samples = {model.num_processed_samples}")
+        # print(f"{threading.current_thread()} with model {model.model_id} started. "
+        #       f"Processed samples = {model.num_processed_samples}")
         processed_samples = model.get_all_samples_as_list_of_json()
         for sample in processed_samples:
             sample_json = json.loads(sample.decode('utf8'))
@@ -68,7 +68,7 @@ class EvaluationServer:
 
     def evaluate_model(self, model, message, processed_samples):
         evaluated_number_of_samples = int(self.all_cass_connections_for_each_model[model.model_id - 1].get_number_of_samples_before_id(
-            id=uuid.UUID(json.loads(processed_samples[-1])['id']))) - 10000 # todo minus zbiór treningowy
+            id=uuid.UUID(json.loads(processed_samples[-1])['id']))) - 100000 # todo minus zbiór treningowy
         for sample in processed_samples:
             sample_dict = json.loads(sample.decode('utf8'))
             model.num_processed_samples += 1
@@ -93,7 +93,7 @@ class EvaluationServer:
             return self.models_first_sample_numbers[model.model_id - 1]
         number_of_sample = self.all_cass_connections_for_each_model[model.model_id - 1].get_number_of_samples_before_id(id=uuid.UUID(json.loads(first_sample.decode('utf8')).get('id')))
         self.models_first_sample_numbers[model.model_id - 1] = number_of_sample
-        print(f"MODEL {model.model_id}, number of first sample = {number_of_sample}")
+        # print(f"MODEL {model.model_id}, number of first sample = {number_of_sample}")
         return number_of_sample
 
     def check_correct_prediction(self, model, sample: Union[str, Any]) -> None:

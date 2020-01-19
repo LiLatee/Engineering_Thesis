@@ -5,6 +5,7 @@ import zmq
 from model_SGDClassifier import ModelSGDClassifier
 import json
 import pickle
+from client_redis import DatabaseRedis
 
 NUMBER_OF_MODELS = 8
 
@@ -33,7 +34,10 @@ def start_new_model(ModelInfo_object, number_of_samples_before_update):
                 update_socket.send_string("update_model")
             list_counter_to_update_model[ModelInfo_object.id] = 0
 
-        model.predict(sample_json=body)
+        sample_with_results = model.predict(sample_json=body)
+        redis_DB = DatabaseRedis(model_id=ModelInfo_object.id)
+        redis_DB.rpush_sample(json_sample=json.dumps(sample_with_results))
+
         list_counter_to_update_model[ModelInfo_object.id] = list_counter_to_update_model[ModelInfo_object.id] + 1
         ch.basic_ack(delivery_tag=method.delivery_tag)
 

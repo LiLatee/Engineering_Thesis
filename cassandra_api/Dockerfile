@@ -1,5 +1,6 @@
-#FROM cassandra:latest
-#COPY . /usr/src/app
+FROM cassandra:latest
+COPY . /usr/src/app
+
 #
 #RUN apt-get -y update \
 #    && apt-get -y upgrade \
