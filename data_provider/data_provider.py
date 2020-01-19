@@ -9,7 +9,7 @@ import random
 import json
 import uuid
 
-number_of_threads = 5
+number_of_threads = 6
 
 
 def encoder(obj):

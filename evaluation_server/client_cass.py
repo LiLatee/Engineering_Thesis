@@ -103,7 +103,7 @@ class CassandraClient:
     def create_tables(self) -> None:
         if self.clean_table:
             query_create_samples_table = """ CREATE TABLE IF NOT EXISTS sample (
-                                                id INT PRIMARY KEY,
+                                                id timeuuid PRIMARY KEY,
                                                 sale TEXT,
                                                 sales_amount_in_euro TEXT,
                                                 time_delay_for_conversion TEXT,
@@ -126,11 +126,12 @@ class CassandraClient:
                                                 product_id TEXT,
                                                 product_title TEXT,
                                                 partner_id TEXT,
-                                                user_id TEXT
+                                                user_id TEXT,
+                                                PRIMARY KEY (id)
                                                 ); """
         else:
             query_create_samples_table = """ CREATE TABLE IF NOT EXISTS sample (
-                                                        id INT PRIMARY KEY,
+                                                        id timeuuid PRIMARY KEY,
                                                         sale TEXT,
                                                         sales_amount_in_euro TEXT,
                                                         time_delay_for_conversion TEXT,
@@ -155,7 +156,8 @@ class CassandraClient:
                                                         partner_id TEXT,
                                                         user_id TEXT,
                                                         predicted TEXT,
-                                                        probabilities LIST<FLOAT>
+                                                        probabilities LIST<FLOAT>,
+                                                        PRIMARY KEY (id)
                                                         ); """
         query_result = self.session.execute(query_create_samples_table)
 
@@ -407,14 +409,15 @@ class CassandraClient:
     def get_number_of_samples_before_id(self, id=None):
         # print(f"ID={id}")
         if id is None:
-            query = "SELECT COUNT(*) FROM " + 'all_stored_samples'
+            query = "SELECT id FROM " + 'all_stored_samples'
             query_result = self.session.execute(query)
         else:
-            query = "SELECT COUNT(*) FROM " + 'all_stored_samples' + " WHERE id < " + str(id) + " ALLOW FILTERING"
+            query = "SELECT id FROM " + 'all_stored_samples' + " WHERE id < " + str(id) + " ALLOW FILTERING"
             query_result = self.session.execute(query)
 
         # print(f"RESULT={query_result[0]['count']}")
-        return query_result[0]['count']
+        # return query_result[0]['count']
+        return len(list(query_result))
 
 if __name__ == '__main__':
     db = CassandraClient('all_stored_samples')
