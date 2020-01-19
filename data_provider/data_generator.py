@@ -33,10 +33,10 @@ class ThreadsafeIterator:
 
 
 def threadsafe_generator(generator_function):
-    def wrapper_function(*args, **kwargs):
+    def wrap_generator(*args, **kwargs):
         return ThreadsafeIterator(generator_function(*args, **kwargs))
 
-    return wrapper_function
+    return wrap_generator
 
 
 @threadsafe_generator
