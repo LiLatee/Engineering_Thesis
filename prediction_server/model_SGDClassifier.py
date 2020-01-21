@@ -34,13 +34,28 @@ class ModelSGDClassifier:
         sample_dict_result = sample_dict.copy()
         sample_dict.pop('sale', None)
         product_id = sample_dict['product_id']
+
+
+        # with open('clicks_views.txt', 'a+') as file:
+        #     file.write((self.df_product_clicks_views.to_json(orient='records')))
+        #     file.write('\n')
         try:
             clicks, views = self.df_product_clicks_views.loc[self.df_product_clicks_views['product_id'] == product_id, ['clicks', 'views']].values.ravel()
+            # with open('pp.txt', 'a+') as file:
+            #     file.write(str(clicks))
+            #     file.write('\n')
+            #     file.write(str(views))
+            #     file.write('\n')
+
             sample_dict['clicks_views_ratio'] = float(clicks/views)
         except ValueError:
             sample_dict['clicks_views_ratio'] = 0
         list_of_required_features = ['product_price','clicks_views_ratio','device_type','audience_id','product_brand',
                                     'partner_id','product_gender','product_age_group','nb_clicks_1week']
+
+        # with open('test.txt', 'a+') as file:
+        #     file.write(str(sample_dict))
+        #     file.write('\n')
 
         numerical_features_std = self.standard_scaler.transform([[sample_dict.get('nb_clicks_1week'), sample_dict.get('product_price')]]).ravel()
         sample_required_features = {key: sample_dict.get(key) for key in list_of_required_features}
@@ -48,6 +63,10 @@ class ModelSGDClassifier:
         sample_required_features['product_price'] = numerical_features_std[1]
 
         sample_list_of_features = list(sample_required_features.values())
+
+        # with open('test2.txt', 'a+') as file:
+        #     file.write(str(sample_list_of_features))
+        #     file.write('\n')
 
         probabilities = self.model.predict_proba([sample_list_of_features])[0].ravel()
         if probabilities[0] > probabilities[1]:

@@ -68,7 +68,7 @@ class EvaluationServer:
 
     def evaluate_model(self, model, message, processed_samples):
         evaluated_number_of_samples = int(self.all_cass_connections_for_each_model[model.model_id - 1].get_number_of_samples_before_id(
-            id=uuid.UUID(json.loads(processed_samples[-1])['id']))) - 200000 # todo minus zbiór treningowy
+            id=uuid.UUID(json.loads(processed_samples[-1])['id']))) - 20000 # todo minus zbiór treningowy
         for sample in processed_samples:
             sample_dict = json.loads(sample.decode('utf8'))
             model.num_processed_samples += 1

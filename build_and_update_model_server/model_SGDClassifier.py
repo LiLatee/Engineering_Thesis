@@ -70,8 +70,18 @@ class ModelSGDClassifier:
         df['clicks_views_ratio'] = df['clicks'] / df['views']
         df.loc[(df['views'] < 5), 'clicks_views_ratio'] = 0
 
-        df_product_clicks_views = df[['product_id', 'clicks', 'views']]
+        df_product_clicks_views = df[['product_id', 'clicks', 'views']].drop_duplicates()
         self.df_product_clicks_views = df_product_clicks_views
+
+
+        # with open('test.txt', 'a+') as f:
+        #     f.write(str(df.shape[0]))
+        #     f.write('\n')
+        #     f.write(df.to_json(orient='records'))
+        #     f.write('\n')
+        #     f.write('FFFFF')
+        #     f.write('\n')
+
 
         self.sc = StandardScaler()
         df[['nb_clicks_1week', 'product_price']] = self.sc.fit_transform(df[['nb_clicks_1week', 'product_price']].to_numpy())
@@ -85,6 +95,7 @@ class ModelSGDClassifier:
         percent_of_ones = counter[1] / number_of_samples
         model = SGDClassifier(loss='log', max_iter=100, penalty='l1', alpha=0.0001, n_jobs=-1,
                               class_weight={0: percent_of_ones, 1: 1 - percent_of_ones})
+
 
         model.fit(x_train, y_train)
 
