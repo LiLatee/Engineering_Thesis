@@ -7,10 +7,16 @@ import pika
 import time
 import random
 import json
+import uuid
+
+number_of_threads = 3
 
 
-number_of_threads = 1
-
+def encoder(obj):
+    if isinstance(obj, uuid.UUID):
+        # if the obj is uuid, we simply return the value of uuid
+        return obj.hex
+    return json.JSONEncoder.default(obj)
 
 async def consumer_handler(websocket, path) -> None:
     async for message in websocket:
@@ -25,6 +31,7 @@ def send_data_about_number_of_samples_between_updates(samples_model_updates):
     fit_socket = context.socket(zmq.PAIR)
     fit_socket.connect('tcp://build_and_update_model_server:5004')
     fit_socket.send_string(samples_model_updates)
+    fit_socket.disconnect('tcp://build_and_update_model_server:5004')
 
 
 async def process_all_samples(training_dataset_size) -> None:
@@ -42,14 +49,19 @@ async def process_all_samples(training_dataset_size) -> None:
 
 
 def send_samples_for_model_training(training_dataset_size) -> None:
+
+
     data = data_generator.get_train_data(training_dataset_size)
+
+    data['id'] = [uuid.uuid1() for _ in range(len(data.index))]
+
     context = zmq.Context()
     fit_socket = context.socket(zmq.PAIR)
     fit_socket.connect('tcp://build_and_update_model_server:5001')
-    fit_socket.send_string(data.to_json(orient='records'))  # convert from bytes to string
+    fit_socket.send_string(data.to_json(orient='records', default_handler=encoder))  # convert from bytes to string
     result = fit_socket.recv()  # wait for end of fitting
     print('Data for training was send. ' + str(data.shape))
-
+    fit_socket.disconnect('tcp://build_and_update_model_server:5001')
 
 def thread_function(generator, index):
     rand = random.Random()
@@ -60,7 +72,7 @@ def thread_function(generator, index):
     while True:
         try:
             data = next(generator)
-            channel.basic_publish(exchange='prediction_queue_fanout', routing_key='', body=data.to_json())
+            channel.basic_publish(exchange='prediction_queue_fanout', routing_key='', body=data.to_json(default_handler=encoder))
             # print(f"{threading.current_thread()} sent data to /predict; no={number_of_sent_samples}")
             time.sleep(rand.randint(0, 500)/10000)
         except StopIteration as e:

@@ -3,8 +3,8 @@
 # 2. cqlsh
 
 import json
-
 import uuid
+
 from cassandra.cluster import Cluster, Session
 from typing import List, Dict, Union
 from cassandra.query import dict_factory
@@ -103,7 +103,7 @@ class CassandraClient:
     def create_tables(self) -> None:
         if self.clean_table:
             query_create_samples_table = """ CREATE TABLE IF NOT EXISTS sample (
-                                                id INT PRIMARY KEY,
+                                                id timeuuid PRIMARY KEY,
                                                 sale TEXT,
                                                 sales_amount_in_euro TEXT,
                                                 time_delay_for_conversion TEXT,
@@ -126,11 +126,13 @@ class CassandraClient:
                                                 product_id TEXT,
                                                 product_title TEXT,
                                                 partner_id TEXT,
-                                                user_id TEXT
-                                                ); """
+                                                user_id TEXT,
+                                                PRIMARY KEY (id)
+                                                ) WITH CLUSTERING ORDER BY (id ASC);
+                                                 """
         else:
             query_create_samples_table = """ CREATE TABLE IF NOT EXISTS sample (
-                                                        id INT PRIMARY KEY,
+                                                        id timeuuid PRIMARY KEY,
                                                         sale TEXT,
                                                         sales_amount_in_euro TEXT,
                                                         time_delay_for_conversion TEXT,
@@ -155,8 +157,9 @@ class CassandraClient:
                                                         partner_id TEXT,
                                                         user_id TEXT,
                                                         predicted TEXT,
-                                                        probabilities LIST<FLOAT>
-                                                        ); """
+                                                        probabilities LIST<FLOAT>,
+                                                        PRIMARY KEY (id)
+                                                        ) WITH CLUSTERING ORDER BY (id ASC); """
         query_result = self.session.execute(query_create_samples_table)
 
     def create_keyspace(self, session: Session) -> None:
@@ -220,7 +223,7 @@ class CassandraClient:
                                       %(user_id)s
                                       )"""
             variables = {
-                         'id': uuid.uuid1(),
+                         'id': uuid.UUID(str(sample.get("id"))),
                          'sale': str(sample.get("sale")),
                          'sales_amount_in_euro': str(sample.get("sales_amount_in_euro")),
                          'time_delay_for_conversion': str(sample.get("time_delay_for_conversion")),
@@ -303,7 +306,7 @@ class CassandraClient:
                                       %(probabilities)s
                                       )"""
             variables = {
-                'id': uuid.uuid1(),
+                'id': uuid.UUID(str(sample.get("id"))),
                 'sale': str(sample.get("sale")),
                 'sales_amount_in_euro': str(sample.get("sales_amount_in_euro")),
                 'time_delay_for_conversion': str(sample.get("time_delay_for_conversion")),
@@ -404,16 +407,25 @@ class CassandraClient:
 
         return result
 
+    def get_number_of_samples_before_id(self, id=None):
+        # print(f"ID={id}")
+        if id is None:
+            query = "SELECT id FROM " + 'all_stored_samples'
+            query_result = self.session.execute(query)
+        else:
+            query = "SELECT id FROM " + 'all_stored_samples' + " WHERE id < " + str(id) + " ALLOW FILTERING"
+            query_result = self.session.execute(query)
+
+        # print(f"RESULT={query_result[0]['count']}")
+        # return query_result[0]['count']
+        return len(list(query_result))
 
 if __name__ == '__main__':
-    db = CassandraClient()
+    db = CassandraClient('all_stored_samples')
     # db.restart_cassandra()
     # db.add_some_data()
-    print(len(db.get_samples_for_update_model_as_list_of_dicts()))
-    id = db.get_last_sample_id()
-    db.add_some_data()
-    print(len(db.get_samples_for_update_model_as_list_of_dicts(id)))
-    print(len(db.get_samples_for_update_model_as_list_of_dicts()))
+
+    print(db.get_number_of_samples_before_id(uuid.UUID('531df1c8-340a-11ea-a51a-0242ac120007')))
     # id = db.get_last_sample_id()
     # print(db.get_samples_for_update_model_as_list_of_dicts(id))
     # print(type(db.get_samples_for_update_model_as_list_of_dicts(id)[0]))

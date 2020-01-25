@@ -20,50 +20,69 @@
       <input type="submit" class="waves-effect waves-light btn start-button" value="start processing samples">
     </div>
     <div class="container" style="padding-top: 32px">
-        <h4>Processed samples:</h4>
+        <h5>Processed samples:</h5>
         <h4 id="samples">0</h4>
     </div>
     <div class="container center">
-        <h5>Accuracy:</h5>
-        <div id="correct-predictions"></div>
-        <h5>Auc-Roc:</h5>
-        <div id="auc-roc"></div>
-        <h5>F1 score:</h5>
+        <div id="accuracy"></div>
+        <div id="auc_roc"></div>
         <div id="f1"></div>
     </div>
     <script type="text/javascript">
-        Plotly.plot("correct-predictions", [
-                {y: [0], x: 0, name: "model 1"},
-                {y: [0], x: 0, name: "model 2"},
-                {y: [0], x: 0, name: "model 3"},
-                {y: [0], x: 0, name: "model 4"},
-                {y: [0], x: 0, name: "model 5"},
-                {y: [0], x: 0, name: "model 6"},
-                {y: [0], x: 0, name: "model 7"},
-                {y: [0], x: 0, name: "model 8"}
-        ]);
+        function set_plots_data() {
+            function get_next_samples_format(index) {
+                return  {y: [], x: [], name: "model " + index, first_processed_sample: -1};
+            }
+            function get_plot_data_array() {
+                var arr = [...Array(8).keys()].map(i => get_next_samples_format(i+1));
+                arr[0].first_processed_sample = 0;
+                return arr;
+            }
+            data_accuracy = get_plot_data_array();
+            data_auc_roc = get_plot_data_array();
+            data_f1 = get_plot_data_array();
+        }
 
-        Plotly.plot("auc-roc", [
-                {y: [0], x: 0, name: "model 1"},
-                {y: [0], x: 0, name: "model 2"},
-                {y: [0], x: 0, name: "model 3"},
-                {y: [0], x: 0, name: "model 4"},
-                {y: [0], x: 0, name: "model 5"},
-                {y: [0], x: 0, name: "model 6"},
-                {y: [0], x: 0, name: "model 7"},
-                {y: [0], x: 0, name: "model 8"}
-        ]);
+        function set_x(model) {
+            const next_x = model["processed_samples"] + data_accuracy[model.id - 1].first_processed_sample;
+            data_accuracy[model.id - 1].x.push(next_x);
+            data_auc_roc[model.id - 1].x.push(next_x);
+            data_f1[model.id - 1].x.push(next_x);
+        }
 
-        Plotly.plot("f1", [
-                {y: [0], x: 0, name: "model 1"},
-                {y: [0], x: 0, name: "model 2"},
-                {y: [0], x: 0, name: "model 3"},
-                {y: [0], x: 0, name: "model 4"},
-                {y: [0], x: 0, name: "model 5"},
-                {y: [0], x: 0, name: "model 6"},
-                {y: [0], x: 0, name: "model 7"},
-                {y: [0], x: 0, name: "model 8"}
-        ]);
+        function set_y(model) {
+            data_accuracy[model.id - 1].y.push(model["correct_predictions"] / model["processed_samples"]);
+            data_auc_roc[model.id - 1].y.push(model["roc_auc_score"]);
+            data_f1[model.id - 1].y.push(model["f1_score"]);
+        }
+
+        var layout_accuracy = {
+            title: 'Accuracy',
+            xaxis: {title: 'Number of samples', zeroline: false},
+            yaxis: {title: 'Accuracy [%]'},
+            datarevision: 0,
+        };
+        var layout_aucroc = {
+            title: 'Auc-Roc',
+            xaxis: {title: 'Number of samples', zeroline: false},
+            yaxis: {title: 'Auc-Roc'},
+            datarevision: 0,
+        };
+        var layout_f1 = {
+            title: 'F1 score',
+            xaxis: {title: 'Number of samples', zeroline: false},
+            yaxis: {title: 'F1 score'},
+            datarevision: 0,
+        };
+
+        var data_accuracy = [];
+        var data_auc_roc = [];
+        var data_f1 = [];
+        set_plots_data();
+
+        Plotly.newPlot("accuracy", data_accuracy, layout_accuracy);
+        Plotly.newPlot("auc_roc", data_auc_roc, layout_aucroc);
+        Plotly.newPlot("f1", data_f1, layout_f1);
 
         var ws_client = new WebSocket("ws://0.0.0.0:8765");
         var ws_eval = new WebSocket("ws://0.0.0.0:8766");
@@ -88,16 +107,18 @@
         ws_eval.onmessage = async function (event) {
             var message = JSON.parse(event.data);
             console.log(message);
-            let list_of_correct_prediction_ratio = [[0], [0], [0], [0], [0], [0], [0], [0]];
-            let list_of_aucroc = [[0], [0], [0], [0], [0], [0], [0], [0]];
-            let list_of_f1 = [[0], [0], [0], [0], [0], [0], [0], [0]];
             for(var key in message) {
                 if (message.hasOwnProperty(key)) {
-                    model = message[key];
+                    let model = message[key];
                     console.log(model);
-                    list_of_correct_prediction_ratio[model.id - 1] = [model["correct_predictions"] / model["processed_samples"]];
-                    list_of_aucroc[model.id - 1] = [model["roc_auc_score"].toPrecision([3])];
-                    list_of_f1[model.id - 1] = [model["f1_score"].toPrecision([3])];
+                    // TODO: set accurate number of first processed sample
+                    if (data_accuracy[model.id - 1].first_processed_sample === -1){
+                        data_accuracy[model.id - 1].first_processed_sample = model['first_processed_sample'];
+                        data_auc_roc[model.id - 1].first_processed_sample = model['first_processed_sample'];
+                        data_f1[model.id - 1].first_processed_sample = model['first_processed_sample'];
+                    }
+                    set_x(model);
+                    set_y(model);
                     if (model['processed_samples'] > max_currently_processed_samples) {
                         max_currently_processed_samples = model['processed_samples'];
                     }
@@ -105,32 +126,21 @@
                 }
             }
             samples.innerHTML = max_currently_processed_samples;
-            Plotly.extendTraces(
-              "correct-predictions",
-              {
-                  y: list_of_correct_prediction_ratio
-              },
-              [0,1,2,3,4,5,6,7]);
-            Plotly.extendTraces(
-              "auc-roc",
-              {
-                  y: list_of_aucroc
-              },
-              [0,1,2,3,4,5,6,7]);
+            console.log(data_accuracy);
+            Plotly.react("accuracy", data_accuracy, layout_accuracy);
+            Plotly.react("auc_roc", data_auc_roc, layout_aucroc);
+            Plotly.react("f1", data_f1, layout_f1);
+	        layout_accuracy.datarevision += 1;
+	        layout_aucroc.datarevision += 1;
+	        layout_f1.datarevision += 1;
 
-            Plotly.extendTraces(
-              "f1",
-              {
-                  y: list_of_f1
-              },
-              [0,1,2,3,4,5,6,7]);
             if(cnt > 500) {
-                Plotly.relayout("correct-predictions",{
+                Plotly.relayout("accuracy",{
                     xaxis: {
                         range: [cnt-500,cnt]
                     }
                 });
-                Plotly.relayout("auc-roc",{
+                Plotly.relayout("auc_roc",{
                     xaxis: {
                         range: [cnt-500,cnt]
                     }
