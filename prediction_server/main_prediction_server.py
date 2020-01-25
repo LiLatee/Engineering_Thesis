@@ -7,7 +7,7 @@ import json
 import pickle
 from client_redis import DatabaseRedis
 
-NUMBER_OF_MODELS = 8
+NUMBER_OF_MODELS = 5
 
 context = zmq.Context()
 # fit_socket = context.socket(zmq.PAIR)

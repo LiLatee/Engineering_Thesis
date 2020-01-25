@@ -5,6 +5,7 @@ import time
 import requests
 import pickle
 import pandas as pd
+from sklearn.model_selection import cross_validate
 
 import data_preprocessing as dp
 from model_info import ModelInfo
@@ -29,7 +30,24 @@ class ModelSGDClassifier:
         self.last_sample_id: str = None
         self.df_product_clicks_views = None
         self.sc = None
-        self.load_last_model()
+        # self.load_last_model()
+
+    def show_mean_scores(self, scores):
+        print("test_acc: %0.2f (+/- %0.2f)" % (scores['test_acc'].mean(), scores['test_acc'].std()))
+        print("train_acc: %0.2f (+/- %0.2f)" % (scores['train_acc'].mean(), scores['train_acc'].std()))
+        print("test_bal_acc: %0.2f (+/- %0.2f)" % (scores['test_bal_acc'].mean(), scores['test_bal_acc'].std()))
+        print("train_bal_acc: %0.2f (+/- %0.2f)" % (scores['train_bal_acc'].mean(), scores['train_bal_acc'].std()))
+        print("test_f1: %0.2f (+/- %0.2f)" % (scores['test_f1'].mean(), scores['test_f1'].std()))
+        print("train_f1: %0.2f (+/- %0.2f)" % (scores['train_f1'].mean(), scores['train_f1'].std()))
+        print("test_recall: %0.2f (+/- %0.2f)" % (scores['test_recall'].mean(), scores['test_recall'].std()))
+        print("train_recall: %0.2f (+/- %0.2f)" % (scores['train_recall'].mean(), scores['train_recall'].std()))
+        print("test_average_precision: %0.2f (+/- %0.2f)" % (
+        scores['test_average_precision'].mean(), scores['test_average_precision'].std()))
+        print("train_average_precision: %0.2f (+/- %0.2f)" % (
+        scores['train_average_precision'].mean(), scores['train_average_precision'].std()))
+        print("test_roc_auc: %0.2f (+/- %0.2f)" % (scores['test_roc_auc'].mean(), scores['test_roc_auc'].std()))
+        print("train_roc_auc: %0.2f (+/- %0.2f)" % (scores['train_roc_auc'].mean(), scores['train_roc_auc'].std()))
+
 
     def create_model_and_save(self, training_data_json: JSONType, update: bool = False) -> None:
         print("create_model_and_save")
@@ -85,6 +103,18 @@ class ModelSGDClassifier:
 
         self.sc = StandardScaler()
         df[['nb_clicks_1week', 'product_price']] = self.sc.fit_transform(df[['nb_clicks_1week', 'product_price']].to_numpy())
+        df = df.sort_values(by=['click_timestamp'], ascending=True)
+
+        # import uuid
+        # df.to_csv(str(df.shape[0]) + '_model_' + str(uuid.uuid1()) + '.csv', sep=',', index=False)
+        # with open(str(uuid.uuid1())+'.txt', 'a+') as f:
+        #     f.write(str(df.shape[0]))
+        #     f.write('\n')
+        #     f.write(df.to_json(orient='records'))
+        #     f.write('\n')
+        #     f.write('FFFFF')
+        #     f.write('\n')
+
 
         x_train = df[['product_price', 'clicks_views_ratio', 'device_type', 'audience_id', 'product_brand',
                       'partner_id', 'product_gender', 'product_age_group', 'nb_clicks_1week']]
@@ -96,6 +126,18 @@ class ModelSGDClassifier:
         model = SGDClassifier(loss='log', max_iter=100, penalty='l1', alpha=0.0001, n_jobs=-1,
                               class_weight={0: percent_of_ones, 1: 1 - percent_of_ones})
 
+        scoring = {
+            'acc': 'accuracy',
+            'bal_acc': 'balanced_accuracy',
+            'roc_auc': 'roc_auc',
+            'f1': 'f1',
+            'recall': 'recall',
+            'precision': 'precision',
+            'average_precision': 'average_precision'
+        }
+        scores = cross_validate(model, x_train, y_train, cv=5, scoring=scoring, return_train_score=True)
+        print("WYNIKI TRENINGU:\n")
+        self.show_mean_scores(scores)
 
         model.fit(x_train, y_train)
 
@@ -134,6 +176,7 @@ class ModelSGDClassifier:
 
         cass = CassandraClient(table_name='all_stored_samples')
         samples_list_of_dicts = cass.get_all_samples_as_list_of_dicts()
+        # samples_list_of_dicts = cass.get_last_n_samples_as_list_of_dicts(100000)
         self.create_model_and_save(json.dumps(samples_list_of_dicts, cls=UUIDEncoder), update=True)
         print("LOG: updating model DONE")
 

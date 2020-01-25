@@ -1,7 +1,7 @@
 import pandas as pd
 import threading
 import uuid
-default_train_model_samples_number = 50000
+default_train_model_samples_number = 500000
 headers = ['sale', 'sales_amount_in_euro', 'time_delay_for_conversion', 'click_timestamp', 'nb_clicks_1week',
            'product_price', 'product_age_group', 'device_type', 'audience_id', 'product_gender',
            'product_brand', 'product_category_1', 'product_category_2', 'product_category_3',

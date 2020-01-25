@@ -17,6 +17,7 @@ def get_number_of_samples_before_update():
     # while True:
     message = info_receiver.recv()
     number_of_samples_before_update = int(message)
+    info_receiver.unbind("tcp://0.0.0.0:5004")
 
 
 def building_model():
@@ -40,7 +41,7 @@ def building_model():
     print(f"Message {message} was sent")
     time.sleep(3)
     number_of_samples_before_update_receiver.send_string("fitted")  # model has been built
-
+    number_of_samples_before_update_receiver.unbind("tcp://0.0.0.0:5001")
 
 def updating_model():
     model = ModelSGDClassifier()

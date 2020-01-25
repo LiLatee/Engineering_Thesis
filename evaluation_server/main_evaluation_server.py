@@ -68,7 +68,7 @@ class EvaluationServer:
 
     def evaluate_model(self, model, message, processed_samples):
         evaluated_number_of_samples = int(self.all_cass_connections_for_each_model[model.model_id - 1].get_number_of_samples_before_id(
-            id=uuid.UUID(json.loads(processed_samples[-1])['id']))) - 20000 # todo minus zbiór treningowy
+            id=uuid.UUID(json.loads(processed_samples[-1])['id']))) - 10000 # todo minus zbiór treningowy
         for sample in processed_samples:
             sample_dict = json.loads(sample.decode('utf8'))
             model.num_processed_samples += 1
@@ -77,9 +77,21 @@ class EvaluationServer:
         roc_auc_score = 0
         f1_score = 0
         if model.num_processed_samples > 50:
-            roc_auc_score = self.calculate_roc_auc_score(processed_samples)
-            f1_score = self.calculate_f1_score(processed_samples)
+            roc_auc_score = self.calculate_roc_auc_score(processed_samples, model.model_id)
+            f1_score = self.calculate_f1_score(processed_samples, model.model_id)
+
+
+        model.avg_acc = (model.avg_acc*model.num_of_evaluations + model.correct_predictions/model.num_processed_samples)/(model.num_of_evaluations + 1)
+        model.avg_aucroc = (model.avg_aucroc*model.num_of_evaluations + roc_auc_score)/(model.num_of_evaluations + 1)
+        model.avg_f1_score = (model.avg_f1_score*model.num_of_evaluations + f1_score)/(model.num_of_evaluations + 1)
+        model.num_of_evaluations += 1
+        print("WYNIKI EWALUACJI:")
+        print("model numer: " + str(model.model_id))
+        print("Accuracy: " + str(model.avg_acc))
+        print("AUC ROC: " + str(model.avg_aucroc))
+        print("F1 score: " + str(model.avg_f1_score) + '\n')
         message.append({
+
             "id": model.model_id,
             "processed_samples": model.num_processed_samples,
             "correct_predictions": model.correct_predictions,
@@ -100,11 +112,11 @@ class EvaluationServer:
         if is_prediction_correct(sample):
             model.correct_predictions += 1
 
-    def calculate_roc_auc_score(self, samples):
-        return get_roc_auc_score(samples)
+    def calculate_roc_auc_score(self, samples, model_number):
+        return get_roc_auc_score(samples, model_number)
 
-    def calculate_f1_score(self, samples):
-        return get_f1_score(samples)
+    def calculate_f1_score(self, samples, model_number):
+        return get_f1_score(samples, model_number)
 
 
 if __name__ == "__main__":

@@ -5,8 +5,13 @@ class DatabaseRedis:
         self.model_id = model_id
         self.redis = redis.StrictRedis(host='redis_service', port=6379, db=0)
         self.del_all_samples()
+
         self.num_processed_samples = 0
         self.correct_predictions = 0
+        self.avg_acc = 0
+        self.avg_aucroc = 0
+        self.avg_f1_score = 0
+        self.num_of_evaluations = 0
 
     def rpush_sample(self, json_sample):
         self.redis.rpush('samples_model_' + str(self.model_id), json_sample)

@@ -9,7 +9,7 @@ import random
 import json
 import uuid
 
-number_of_threads = 6
+number_of_threads = 3
 
 
 def encoder(obj):
@@ -31,6 +31,7 @@ def send_data_about_number_of_samples_between_updates(samples_model_updates):
     fit_socket = context.socket(zmq.PAIR)
     fit_socket.connect('tcp://build_and_update_model_server:5004')
     fit_socket.send_string(samples_model_updates)
+    fit_socket.disconnect('tcp://build_and_update_model_server:5004')
 
 
 async def process_all_samples(training_dataset_size) -> None:
@@ -60,7 +61,7 @@ def send_samples_for_model_training(training_dataset_size) -> None:
     fit_socket.send_string(data.to_json(orient='records', default_handler=encoder))  # convert from bytes to string
     result = fit_socket.recv()  # wait for end of fitting
     print('Data for training was send. ' + str(data.shape))
-
+    fit_socket.disconnect('tcp://build_and_update_model_server:5001')
 
 def thread_function(generator, index):
     rand = random.Random()

@@ -128,7 +128,8 @@ class CassandraClient:
                                                 partner_id TEXT,
                                                 user_id TEXT,
                                                 PRIMARY KEY (id)
-                                                ); """
+                                                ) WITH CLUSTERING ORDER BY (id ASC);
+                                                 """
         else:
             query_create_samples_table = """ CREATE TABLE IF NOT EXISTS sample (
                                                         id timeuuid PRIMARY KEY,
@@ -158,7 +159,7 @@ class CassandraClient:
                                                         predicted TEXT,
                                                         probabilities LIST<FLOAT>,
                                                         PRIMARY KEY (id)
-                                                        ); """
+                                                        ) WITH CLUSTERING ORDER BY (id ASC); """
         query_result = self.session.execute(query_create_samples_table)
 
     def create_keyspace(self, session: Session) -> None:

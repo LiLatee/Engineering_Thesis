@@ -4,6 +4,7 @@
 
 import json
 import uuid
+import pandas as pd
 
 from cassandra.cluster import Cluster, Session
 from typing import List, Dict, Union
@@ -128,7 +129,7 @@ class CassandraClient:
                                                 partner_id TEXT,
                                                 user_id TEXT,
                                                 PRIMARY KEY (id)
-                                                ); """
+                                                ) WITH CLUSTERING ORDER BY (id ASC); """
         else:
             query_create_samples_table = """ CREATE TABLE IF NOT EXISTS sample (
                                                         id timeuuid PRIMARY KEY,
@@ -158,7 +159,7 @@ class CassandraClient:
                                                         predicted TEXT,
                                                         probabilities LIST<FLOAT>,
                                                         PRIMARY KEY (id)
-                                                        ); """
+                                                        ) WITH CLUSTERING ORDER BY (id ASC); """
         query_result = self.session.execute(query_create_samples_table)
 
     def create_keyspace(self, session: Session) -> None:
@@ -385,6 +386,21 @@ class CassandraClient:
             result.append(sample)
 
         return result
+
+
+    def get_last_n_samples_as_list_of_dicts(self, n) -> List[dict]:
+        query = "SELECT * FROM " + str(self.TABLE_NAME)
+        query_result = self.session.execute(query)
+
+        list_of_dicts = []
+        for sample in query_result:
+            list_of_dicts.append(sample)
+
+        df = pd.DataFrame(list_of_dicts)
+        df = df.sort_values(by='click_timestamp')
+        df = df[-n-1:-1]
+
+        return df.to_dict('records')
 
     def delete_all_samples(self):
         self.session.execute("TRUNCATE " + str(self.TABLE_NAME))
